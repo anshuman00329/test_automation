@@ -10,7 +10,7 @@ class CommonUtils {
 
     def mysql_url= [:]
     public static envParams = null
-    def env_tag = 'tlmdevint'
+    def envPath = 'sc2020devint'
 
     def generateAuthorizationToken(){
         def userName = 'supplychainadmin@1';
@@ -20,10 +20,10 @@ class CommonUtils {
 
     def read_properties()
     {
-        envParams = new Yaml().load(new FileReader(System.getProperty("user.dir") + '/src/test/groovy/config/tlm_env.yml'))[env_tag]
+        envParams = new Yaml().load(new FileReader(System.getProperty("user.dir") + '/src/test/groovy/config/tlm_env.yml'))
         if (envParams==null)
         {
-            throw new Exception("No ENV defined for the env_tag="+ env_tag  + "under config/tlm_env.yml, please check and retry")
+            throw new Exception("No ENV under config/tlm_env.yml, please check and retry")
         }
         return envParams
     }
@@ -79,5 +79,13 @@ class CommonUtils {
         String  simpleDateFormat  = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss",Locale.US).format(timestamp);
         return simpleDateFormat
 
+    }
+
+    /*
+    Set the env type in tlm_env.yml
+    * */
+
+    String getEnv_tag(){
+        return envPath
     }
 }

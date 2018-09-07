@@ -1,33 +1,38 @@
+app_config:
+  shipment:
+    url: http://scshipment.${envTag}.manhdev.com
+    endpoint: /api/scshipment/shipment
+    create_endpoint: /api/scshipment/shipment/save
+    get_endpoint: /api/scshipment/shipment/shipmentId/
+
+  order:
+    url: http://dcorder.${envTag}.manhdev.com
+    endpoint: /api/dcorder/order
+    create_endpoint: /api/dcorder/order/import
+    get_endpoint: /api/dcorder/order/orderId
+
+  tender:
+    url: http://tender.${envTag}.manhdev.com
+    endpoint: /api/tender/tender
+
+  tracking:
+    url: http://tracking.${envTag}.manhdev.com
+    endpoint: /api/tracking/tracking
+
+  accept:
+    url: http://tender.${envTag}.manhdev.com
+    endpoint: /api/tender/acceptTender
+
+  invoice:
+    url: http://invoice.${envTag}.manhdev.com
+    endpoint: /api/invoice/invoice
+
+  mq:
+    url: tcp://activemq.sc2020devint.manhdev.com:61616
+    url456: http://activemq.tlmqe.manhdev.com/admin/xml/queues.jsp
+
+
 tlmdevint:
-  app_config:
-    shipment:
-      url: https://scshipment.sc2020devint.manhdev.com
-      endpoint: /api/scshipment/shipment
-      create_endpoint: /api/scshipment/shipment/save
-      party_qualifier: /api/scshipment/partyQualifier
-
-    order:
-      url: https://dcorder.sc2020devint.manhdev.com
-      endpoint: /api/dcorder/order
-      create_endpoint: /api/dcorder/order/import
-
-    tender:
-      url: https://tender.sc2020devint.manhdev.com
-      endpoint: /api/tender/tender
-      acceptendpoint: /api/tender/acceptTender
-      rejectendpoint: /api/tender/rejectTender
-      resetendpoint: /api/tender/resetTender
-      recallendpoint: /api/tender/recallTender
-      configendpoint: /api/tender/writeConfig
-
-    tracking:
-      url: https://tracking.sc2020devint.manhdev.com
-      endpoint: /api/tracking/tracking
-
-    invoice:
-      url: https://invoice.tlmqe.manhdev.com
-      endpoint: /api/invoice/invoice
-
   db_config:
     default: &db_default
       host: 10.50.72.139
@@ -65,39 +70,6 @@ tlmdevint:
       service: tlmb_invoice
 
 tlmautomationqe:
-  app_config:
-    shipment:
-      url: https://scshipment.tlmqe.manhdev.com
-      endpoint: /api/scshipment/shipment
-      create_endpoint: /api/scshipment/shipment/save
-      party_qualifier: /api/scshipment/partyQualifier
-
-    order:
-      url: https://dcorder.tlmqe.manhdev.com
-      endpoint: /api/dcorder/order
-      create_endpoint: /api/dcorder/order/import
-
-    tender:
-      url: https://tender.tlmqe.manhdev.com
-      endpoint: /api/tender/tender
-      acceptendpoint: /api/tender/acceptTender
-      rejectendpoint: /api/tender/rejectTender
-      resetendpoint: /api/tender/resetTender
-      recallendpoint: /api/tender/recallTender
-      configendpoint: /api/tender/writeConfig
-
-    tracking:
-      url: https://tracking.tlmqe.manhdev.com
-      endpoint: /api/tracking/tracking
-
-    accept:
-      url: https://tender.tlmqe.manhdev.com
-      endpoint: /api/tender/acceptTender
-
-    invoice:
-      url: https://invoice.tlmqe.manhdev.com
-      endpoint: /api/invoice/invoice
-
   db_config:
     default: &db_default1
       host: 10.50.75.107

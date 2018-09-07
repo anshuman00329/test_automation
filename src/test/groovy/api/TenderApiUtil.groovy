@@ -34,6 +34,7 @@ class TenderApiUtil {
             tender_db_config = config.add_mysql_url(tender_config['db_config']['tender'])
             URL=tender_app_config['url'] + tender_app_config[apiEndPoint]
                        println("URL = " + URL)
+            URL = URL.replace('${envTag}',config.getEnv_tag())
             def status = rest.postRequest(URL, tenderJson, "application/json")
             println("Status =" + status)
             /*if(status.getStatusCode()!=200)

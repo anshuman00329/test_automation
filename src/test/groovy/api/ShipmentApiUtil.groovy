@@ -74,6 +74,7 @@ class ShipmentApiUtil {
             shipment_app_config = shipment_config['app_config']['shipment']
             shipment_db_config= config.add_mysql_url(shipment_config['db_config']['shipment'])
             URL = shipment_app_config['url']+ shipment_app_config['create_endpoint']
+            URL = URL.replace('${envTag}',config.getEnv_tag())
             println ("URL = " +URL)
             def response = rest.postRequest(URL, msg, "application/json")
             println("Status =" + response.getStatusCode())
@@ -93,6 +94,7 @@ class ShipmentApiUtil {
             shipment_app_config = shipment_config['app_config']['shipment']
             shipment_db_config= config.add_mysql_url(shipment_config['db_config']['shipment'])
             URL = shipment_app_config['url']+ shipment_app_config['party_qualifier']
+            URL = URL.replace('${envTag}',config.getEnv_tag())
             println ("URL = " +URL)
             def response = rest.postRequest(URL, msg, "application/json")
             println("Status =" + response.getStatusCode())
