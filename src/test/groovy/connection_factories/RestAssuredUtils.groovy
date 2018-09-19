@@ -1,20 +1,9 @@
 package connection_factories
 
-import com.jayway.restassured.RestAssured
-import com.jayway.restassured.path.json.JsonPath
-import com.jayway.restassured.response.Response
-import groovy.json.JsonParser;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.RequestBuilder;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser
-import sun.security.krb5.Credentials;
 
+import com.jayway.restassured.RestAssured
+import com.jayway.restassured.config.SSLConfig
+import com.jayway.restassured.response.Response
 
 class RestAssuredUtils {
 
@@ -24,10 +13,12 @@ class RestAssuredUtils {
         try{
 
                  return RestAssured.given()
+                         .config(RestAssured.config().sslConfig(new SSLConfig().allowAllHostnames()))
                          .header("Authorization", "Bearer " +tokenAuthentication())
                          .header("Organization","1")
                          .header("Location","01")
                          .body(jsonObj)
+                         .relaxedHTTPSValidation("TLS")
                          .when()
                          .contentType(contentType)
                          .post(endURL)
@@ -37,30 +28,23 @@ class RestAssuredUtils {
         }
     }
 
-    public def tokenAuthentication()
-    {
+    public def tokenAuthentication() {
         def token
-        HttpUriRequest request = RequestBuilder.post()
-                .setUri("https://authserver.sc2020devint.manhdev.com/"+"oauth/token")
-                .setHeader("Authorization", "Basic b21uaWNvbXBvbmVudC4xLjAuMDpiNHM4cmdUeWc1NVhZTnVu")
-                .addParameter("username", "supplychainadmin@1")
-                .addParameter("password", "password")
-                .addParameter("grant_type", "password")
-                .build();
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpResponse response = client.execute(request);
-        HttpEntity entity = response.getEntity();
-
-        JsonElement root = new JsonParser().parse(EntityUtils.toString(entity));
-        token = root.getAsJsonObject().get("access_token").toString().split("\"")[1];
-        println("Auth token http is : "+token)
-        return token;
+        Map<String, String> map = new HashMap<String, String>()
+        map.put("username","supplychainadmin@1")
+        map.put("password","password")
+        map.put("grant_type","password")
+        Response response = RestAssured
+                .given()
+                .config(RestAssured.config().sslConfig(new SSLConfig().allowAllHostnames()))
+                .header("Authorization", "Basic b21uaWNvbXBvbmVudC4xLjAuMDpiNHM4cmdUeWc1NVhZTnVu")
+                .parameters(map)
+                .relaxedHTTPSValidation("TLS")
+                .when()
+                .post "https://authserver.sc2020devint.manhdev.com/oauth/token"
+        token = response.getBody().jsonPath().get("access_token")
+        println("Auth token https is : " + token)
+        return token
     }
-
-    public static Response getRequest(String endURL,String contentType){
-          return RestAssured.given().when().contentType(contentType).get(endURL);
-    }
-
-
 
 }
