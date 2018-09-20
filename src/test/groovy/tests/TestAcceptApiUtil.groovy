@@ -1,31 +1,31 @@
 package tests
 
-import api.AcceptApi
-import api.TenderApi
+import api.AcceptApiUtil
+import api.TenderApiUtil
 import connection_factories.RestAssuredUtils
 import db.DbConnectionFactory
 import org.testng.annotations.Test
 import jsonTemplate.tenderTemplate.BaseAccept
 import jsonTemplate.tenderTemplate.BaseTender
 
-class TestAcceptApi{
+class TestAcceptApiUtil {
 
     BaseAccept baseAccept
-    AcceptApi acceptApi
+    AcceptApiUtil acceptApi
     DbConnectionFactory db
     def acceptJson
     def tenderJson
     RestAssuredUtils rest
     BaseTender baseTender
-    TenderApi tenderApi
+    TenderApiUtil tenderApi
 
-    TestAcceptApi()
+    TestAcceptApiUtil()
     {
         baseAccept = new BaseAccept()
-        acceptApi = new AcceptApi()
+        acceptApi = new AcceptApiUtil()
         db = new DbConnectionFactory()
         baseTender = new BaseTender()
-        tenderApi = new TenderApi()
+        tenderApi = new TenderApiUtil()
     }
 
     @Test(description = "Tender and Accept the given shipment")

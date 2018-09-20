@@ -35,8 +35,8 @@ class OrderApiUtil {
         try {
             order_config = config.read_properties()
             order_app_config = order_config['app_config']['order']
-            order_db_config= config.add_mysql_url(order_config['db_config']['order'])
-            URL = order_app_config['url']+ order_app_config['create_endpoint']
+            /*order_db_config= config.add_mysql_url(order_config['db_config']['order'])*/
+            URL = order_app_config['create_endpoint']
             URL = URL.replace('${envTag}',config.getEnv_tag())
             println ("URL = " +URL)
             def status = rest.postRequest(URL, orderJson, "application/json","1")

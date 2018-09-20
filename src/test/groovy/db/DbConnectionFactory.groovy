@@ -6,7 +6,7 @@ import org.yaml.snakeyaml.Yaml
 class DbConnectionFactory {
 
     def envParams
-    def env_tag ='tlmdevint'
+    def env_tag ='sc2020devint'
     def mysql_url
     def envDbParams
 
