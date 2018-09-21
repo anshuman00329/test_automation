@@ -4,7 +4,7 @@ import common_libs.CommonUtils
 import connection_factories.RestAssuredUtils
 import jsonTemplate.tenderTemplate.BaseAccept
 
-class AcceptApi {
+class AcceptApiUtil {
 
     RestAssuredUtils rest
     BaseAccept accept
@@ -14,7 +14,7 @@ class AcceptApi {
     def accept_config
     def accept_db_config
 
-    AcceptApi()
+    AcceptApiUtil()
     {
         rest = new RestAssuredUtils()
         accept = new BaseAccept()
@@ -25,8 +25,8 @@ class AcceptApi {
         try {
             accept_config = config.read_properties()
             accept_app_config = accept_config['app_config']['accept']
-            accept_db_config= config.add_mysql_url(accept_config['db_config']['accept'])
-            URL = accept_app_config['url']+ accept_app_config['endpoint']
+            /*accept_db_config= config.add_mysql_url(accept_config['db_config']['accept'])*/
+            URL =accept_app_config['endpoint']
             URL = URL.replace('${envTag}',config.getEnv_tag())
             def status = rest.postRequest(URL, msg, "application/json")
             if(status.getStatusCode()!=200)

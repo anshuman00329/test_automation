@@ -31,10 +31,10 @@ class TenderApiUtil {
         try {
             tender_config = config.read_properties()
             tender_app_config = tender_config['app_config']['tender']
-            tender_db_config = config.add_mysql_url(tender_config['db_config']['tender'])
-            URL=tender_app_config['url'] + tender_app_config[apiEndPoint]
-                       println("URL = " + URL)
+            /*tender_db_config = config.add_mysql_url(tender_config['db_config']['tender'])*/
+            URL= tender_app_config[apiEndPoint]
             URL = URL.replace('${envTag}',config.getEnv_tag())
+            println("URL = " + URL)
             def status = rest.postRequest(URL, tenderJson, "application/json")
             println("Status =" + status)
             /*if(status.getStatusCode()!=200)

@@ -1,38 +1,38 @@
 app_config:
   shipment:
-    url: http://scshipment.${envTag}.manhdev.com
-    endpoint: /api/scshipment/shipment
-    create_endpoint: /api/scshipment/shipment/save
-    get_endpoint: /api/scshipment/shipment/shipmentId/
+    endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/shipment
+    create_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/shipment/save
+    getshipment_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/shipment/shipmentId/${shipmentId}
+    deleteshipment_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/shipment/${pk}
+    udpateshipment_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/shipment/shipmentId/${shipmentId}
+    party_qualifier: https://scshipment.${envTag}.manhdev.com/api/scshipment/partyQualifier
 
   order:
-    url: http://dcorder.${envTag}.manhdev.com
-    endpoint: /api/dcorder/order
-    create_endpoint: /api/dcorder/order/import
-    get_endpoint: /api/dcorder/order/orderId
+    create_endpoint: https://dcorder.${envTag}.manhdev.com/api/dcorder/order
+    save_endpoint: https://dcorder.${envTag}.manhdev.com/api/dcorder/order/save
+    get_endpoint: https://dcorder.${envTag}.manhdev.com/api/dcorder/order/orderId/${orderId}
 
   tender:
-    url: http://tender.${envTag}.manhdev.com
-    endpoint: /api/tender/tender
+    endpoint: https://tender.${envTag}.manhdev.com/api/tender/tender
+    acceptendpoint: https://tender.${envTag}.manhdev.com/api/tender/acceptTender
+    rejectendpoint: https://tender.${envTag}.manhdev.com/api/tender/rejectTender
+    resetendpoint: https://tender.${envTag}.manhdev.com/api/tender/resetTender
+    recallendpoint: https://tender.${envTag}.manhdev.com/api/tender/recallTender
+    configendpoint: https://tender.${envTag}.manhdev.com/api/tender/writeConfig
+    gettenderendpoint: https://tender.${envTag}.manhdev.com/api/tender/tender/shipmentId/${shipmentId}/carrierId/${carrierId}
 
   tracking:
-    url: http://tracking.${envTag}.manhdev.com
-    endpoint: /api/tracking/tracking
-
-  accept:
-    url: http://tender.${envTag}.manhdev.com
-    endpoint: /api/tender/acceptTender
+    endpoint: https://tracking.${envTag}.manhdev.com/api/tracking/tracking
 
   invoice:
-    url: http://invoice.${envTag}.manhdev.com
-    endpoint: /api/invoice/invoice
+    endpoint: https://invoice.${envTag}.manhdev.com/api/invoice/invoice
 
   mq:
-    url: tcp://activemq.sc2020devint.manhdev.com:61616
-    url456: http://activemq.tlmqe.manhdev.com/admin/xml/queues.jsp
+    url: tcp://activemq.${envTag}.manhdev.com:61616
+    url456: http://activemq.${envTag}.manhdev.com/admin/xml/queues.jsp
 
 
-tlmdevint:
+sc2020devint:
   db_config:
     default: &db_default
       host: 10.50.72.139

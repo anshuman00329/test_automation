@@ -44,11 +44,11 @@ class TestShipmentApi {
         def involvedPatyId = '0eb1c47a-fc08-48a1-9340-f441c4ddec'
         //Create a Party Qualifier
         partyqualifierid = "Insurance Company"
-/*       shipmentPartyQualifier.setPartyqualifierid(partyqualifierid)
+       shipmentPartyQualifier.setPartyqualifierid(partyqualifierid)
        shipmentPartyQualifier.setQualifierdescription("Adding Party Qualifier for Automation testing.")
        partyQualifierJson = shipmentPartyQualifier.buildjson()
        println("Party Qualifier json = " + partyQualifierJson)
-       shipmentUtil.createPartyQualifier(partyQualifierJson)*/
+       shipmentUtil.createPartyQualifier(partyQualifierJson)
 
         //Create Shipment Json
         shipment.setOrgid(orgId)
