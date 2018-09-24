@@ -27,7 +27,7 @@ class BaseShipment {
 
     BaseShipment() {
 
-        orgid = 'dummyOrg'
+        orgid = '1'
         shipmentid = '1234'
         assignedcarrier = 'CARR1'
         transportationstatus = 'Planned'

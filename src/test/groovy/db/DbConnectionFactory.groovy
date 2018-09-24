@@ -53,6 +53,12 @@ class DbConnectionFactory {
         return dbProperties
     }
 
+    Sql trackingDbProperties()
+    {
+        def dbProperties = Sql.newInstance(add_mysql_url(envParams['db_config']['tracking']),envDbParams['default']['username'],envDbParams['default']['password'],envDbParams['default']['driver'])
+        return dbProperties
+    }
+
     public void closeConnetion(Sql sql) {
         sql.close();
     }
