@@ -32,11 +32,17 @@ class RestAssuredUtils {
     public def tokenAuthentication() {
         def token
         Map<String, String> map = new HashMap<String, String>()
-        map.put("username", "supplychainadmin@1")
-        map.put("password", "password")
-        map.put("grant_type", "password")
-        Response response = RestAssured.given().header("Authorization", "Basic b21uaWNvbXBvbmVudC4xLjAuMDpiNHM4cmdUeWc1NVhZTnVu").parameters(map).when().post("https://authserver.sc2020devint.manhdev.com/oauth/token")
-        //Response response = RestAssured.given().header("Authorization","Basic b21uaWNvbXBvbmVudC4xLjAuMDpiNHM4cmdUeWc1NVhZTnVu").parameter("username","systemadmin@system.com").parameter("password","password").parameter("grant_type","password").when().post("https://authserver.sc2020devint.manhdev.com/oauth/token")
+        map.put("username","supplychainadmin@1")
+        map.put("password","password")
+        map.put("grant_type","password")
+        Response response = RestAssured
+                .given()
+                .config(RestAssured.config().sslConfig(new SSLConfig().allowAllHostnames()))
+                .header("Authorization", "Basic b21uaWNvbXBvbmVudC4xLjAuMDpiNHM4cmdUeWc1NVhZTnVu")
+                .parameters(map)
+                .relaxedHTTPSValidation("TLS")
+                .when()
+                .post "https://authserver.sc2020devint.manhdev.com/oauth/token"
         token = response.getBody().jsonPath().get("access_token")
         println("Auth token https is : " + token)
         return token
