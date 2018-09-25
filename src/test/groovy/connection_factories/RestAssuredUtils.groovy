@@ -46,6 +46,7 @@ class RestAssuredUtils {
         token = response.getBody().jsonPath().get("access_token")
         println("Auth token https is : " + token)
         return token
+        
     }
 
     public Response getRequest(String endURL, String contentType) {
