@@ -8,6 +8,18 @@ class BaseShipment {
     def shipmentid
     def assignedcarrier
     def transportationstatus
+    def protectionlevel
+    def hazardousmaterial
+    def productclass
+    def billingmethod
+    def actualtransportmode
+    def actualequipment
+    def actualservicelevel
+    def designatedmodeid
+    def designatedequipmentid
+    def designatedservicelevelid
+    def designatedshipvia
+    def productclassid
     def totalcost
     def totalcostcurrencyuom
     def trailerid
@@ -31,6 +43,18 @@ class BaseShipment {
         shipmentid = '1234'
         assignedcarrier = 'CARR1'
         transportationstatus = 'Planned'
+        protectionlevel = 'PL1'
+        hazardousmaterial = true
+        productclass = 'PRod-01'
+        billingmethod = 'Prepaid'
+        actualtransportmode = 'LTL'
+        actualequipment = 'TRACTOR-01'
+        actualservicelevel = 'SL-LTL'
+        designatedmodeid = 'LTL'
+        designatedequipmentid = 'TRACTOR-01'
+        designatedservicelevelid = 'SL-LTL'
+        designatedshipvia = null
+        productclassid = '30'
         totalcost = 50.0
         totalcostcurrencyuom = 'USD'
         trailerid = "PB08"
@@ -57,6 +81,18 @@ class BaseShipment {
             AssignedCarrier this.assignedcarrier
             ShipmentId this.shipmentid
             TransportationStatus this.transportationstatus
+            ProtectionLevel this.protectionlevel
+            HazardousMaterial this.hazardousmaterial
+            ProductClass this.productclass
+            BillingMethod this.billingmethod
+            ActualTransportMode this.actualtransportmode
+            ActualEquipment this.actualequipment
+            ActualServiceLevel this.actualservicelevel
+            DesignatedModeId this.designatedmodeid
+            DesignatedEquipmentId this.designatedequipmentid
+            DesignatedServiceLevelId this.designatedservicelevelid
+            DesignatedShipVia this.designatedshipvia
+            ProductClassId this.productclassid
             TotalCost this.totalcost
             TotalCostCurrencyUOM this.totalcostcurrencyuom
             TrailerId this.trailerid

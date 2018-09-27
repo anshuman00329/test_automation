@@ -5,6 +5,7 @@ import api.ShipmentApiUtil
 import api.TenderApiUtil
 import com.jayway.restassured.response.Response
 import common_libs.CommonUtils
+import connection_factories.RestAssuredUtils
 import jsonTemplate.orderTemplate.BaseOrder
 import jsonTemplate.shipmentTemplate.BaseShipment
 import jsonTemplate.shipmentTemplate.BaseShipmentPartyQualiffier
@@ -13,6 +14,7 @@ import jsonTemplate.tenderTemplate.BaseTender
 import jsonTemplate.tenderTemplate.BaseTenderRecall
 import jsonTemplate.tenderTemplate.BaseTenderReject
 import org.testng.annotations.BeforeClass
+import org.testng.annotations.BeforeSuite
 import org.testng.annotations.Test
 import jsonTemplate.orderTemplate.BaseOrder
 import jsonTemplate.shipmentTemplate.BaseShipment
@@ -27,6 +29,7 @@ class TestShipmentApi {
     BaseAccept baseAccept
     BaseTenderReject baseReject
     BaseTenderRecall baseRecall
+    RestAssuredUtils restAssuredUtils = new RestAssuredUtils();
     def shipmentUtil
     def orderUtil
     def commonUtil
@@ -51,7 +54,12 @@ class TestShipmentApi {
         orgId = "1"
     }
 
-    @BeforeClass
+    @BeforeSuite
+    public preSuite(){
+        String token = restAssuredUtils.tokenAuthentication()
+        println("Token is:"+token)
+    }
+    @BeforeClass(enabled = true)
     public void preConfig() {
         /*Create a Insurance Company Party Qualifier*/
         partyqualifierid = "Insurance Company"
@@ -101,6 +109,7 @@ class TestShipmentApi {
         def carrierId = 'HAR_CARRIER_01'
         def stop_facilities = ['FAC1', 'FAC2', 'FAC3', 'FAC4']
         def stop_actions = ['PU', 'DL', 'DL', 'DL']
+        def orders = ['HAR_ORDER_41', 'HAR_ORDER_42', 'HAR_ORDER_43', 'HAR_ORDER_45']
         def involvedPatyId = 'eb1c47a-fc08-48a1-9340-f441c4ddec' + CommonUtils.getFourDigitRandomNumber()
         partyqualifierid = "Insurance Company"
         //Create Shipment Json
@@ -108,9 +117,14 @@ class TestShipmentApi {
         shipment.setShipmentid(shipmentId)
         shipment.setPartyqualifierid(partyqualifierid)
         shipment.setAssignedcarrier(carrierId)
+        shipment.setPartyqualifierid(partyqualifierid)
         shipment.shipmentstops = stop_facilities.collect {
             shipmentUtil.update_facilities_and_stops_on_tlm_shipment(stop_facilities.indexOf(it), shipment, minimum_days_from_now, stop_facilities, stop_actions)
         }
+        shipment.shipmentordermovements = orders.collect {
+            shipmentUtil.update_order_movement(orders.indexOf(it), shipment, orders)
+        }
+        shipment.shipmentinvolvedparties = shipmentUtil.update_Involved_parties(shipment, involvedPatyId)
         shipmentJson = shipment.buildsimplejson()
         println("Shipment Json with 4 Stops =" + shipmentJson)
 
@@ -403,5 +417,33 @@ class TestShipmentApi {
         response = orderUtil.getOrder(orderId)
         println(response.getBody().jsonPath().get("data.PlanningStatus"))
 
+    }
+    @Test(description = 'temperory', enabled = false)
+    public void temp(){
+        def shipmentId = 'PAR_SHIPMENT_' + CommonUtils.getFourDigitRandomNumber()
+        def carrierId = 'PAR_CARRIER_' + CommonUtils.getFourDigitRandomNumber()
+        def stop_facilities = ['FAC1', 'FAC2']
+        def stop_actions = ['PU', 'DL']
+        def orders = ['HAR_ORDER_41', 'HAR_ORDER_42']
+        def involvedPatyId = '0eb1c47a-fc08-48a1-9340-f441c4ddec' + CommonUtils.getFourDigitRandomNumber()
+        Response response
+        partyqualifierid = "Insurance Company"
+        /*Create Shipment Json*/
+        shipment.setOrgid(orgId)
+        shipment.setShipmentid(shipmentId)
+        shipment.setAssignedcarrier(carrierId)
+        shipment.setPartyqualifierid(partyqualifierid)
+        shipment.shipmentstops = stop_facilities.collect {
+            shipmentUtil.update_facilities_and_stops_on_tlm_shipment(stop_facilities.indexOf(it), shipment, minimum_days_from_now, stop_facilities, stop_actions)
+        }
+        shipment.shipmentordermovements = orders.collect {
+            shipmentUtil.update_order_movement(orders.indexOf(it), shipment, orders)
+        }
+        shipment.shipmentinvolvedparties = shipmentUtil.update_Involved_parties(shipment, involvedPatyId)
+        shipmentJson = shipment.buildsimplejson()
+        println("Shipment Json with 2 Stops =" + shipmentJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment","endpoint"), shipmentJson)
+        println("Status = " +response.getStatusCode())
+        //shipmentUtil.getShipment(shipmentId)
     }
 }

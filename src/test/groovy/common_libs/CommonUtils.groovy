@@ -18,6 +18,13 @@ class CommonUtils {
         def password = 'password';
     }
 
+    String getUrl(String component, String endPointUrl){
+        def config = read_properties()
+        String url = config['app_config'][component][endPointUrl]
+        url = url.replace('${envTag}',envPath)
+        println("URL = "+url)
+        return url
+    }
 
     def read_properties() {
         envParams = new Yaml().load(new FileReader(System.getProperty("user.dir") + '/src/test/groovy/config/tlm_env.yml'))

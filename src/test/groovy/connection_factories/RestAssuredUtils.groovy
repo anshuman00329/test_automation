@@ -4,12 +4,14 @@ package connection_factories
 import com.jayway.restassured.RestAssured
 import com.jayway.restassured.config.SSLConfig
 import com.jayway.restassured.response.Response
+import common_libs.CommonUtils
 
 class RestAssuredUtils {
 
     Response response
+    CommonUtils commonUtils = new CommonUtils();
 
-    public def postRequest(String endURL, Object jsonObj, String contentType) throws UnknownHostException {
+    public def postRequest(String endURL, Object jsonObj) throws UnknownHostException {
         try {
             Map<String, String> map = new HashMap<String, String>()
             map.put("Authorization", "Bearer" + tokenAuthentication())
@@ -21,7 +23,7 @@ class RestAssuredUtils {
                     .body(jsonObj)
                     .relaxedHTTPSValidation("TLS")
                     .when()
-                    .contentType(contentType)
+                    .contentType("application/json")
                     .post(endURL)
         }
         catch (UnknownHostException e) {
@@ -35,6 +37,8 @@ class RestAssuredUtils {
         map.put("username","supplychainadmin@1")
         map.put("password","password")
         map.put("grant_type","password")
+        String url = 'https://authserver.${envTag}.manhdev.com/oauth/token'
+        url = url.replace('${envTag}',commonUtils.getEnv_tag())
         Response response = RestAssured
                 .given()
                 .config(RestAssured.config().sslConfig(new SSLConfig().allowAllHostnames()))
@@ -42,7 +46,7 @@ class RestAssuredUtils {
                 .parameters(map)
                 .relaxedHTTPSValidation("TLS")
                 .when()
-                .post "https://authserver.sc2020devint.manhdev.com/oauth/token"
+                .post(url)
         token = response.getBody().jsonPath().get("access_token")
         println("Auth token https is : " + token)
         return token

@@ -175,7 +175,7 @@ class ShipmentApiUtil {
             URL = shipment_app_config['party_qualifier']
             URL = URL.replace('${envTag}', config.getEnv_tag())
             println("URL = " + URL)
-            def response = rest.postRequest(URL, msg, "application/json")
+            def response = rest.postRequest(URL, msg)
             println("Status =" + response.getStatusCode())
             /*if(status.getStatusCode()!=200)
             {
