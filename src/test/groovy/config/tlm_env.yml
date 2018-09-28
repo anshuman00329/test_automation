@@ -6,6 +6,7 @@ app_config:
     deleteshipment_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/shipment/${pk}
     udpateshipment_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/shipment/shipmentId/${shipmentId}
     party_qualifier: https://scshipment.${envTag}.manhdev.com/api/scshipment/partyQualifier
+    getstop_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/stop/stopSeq/${stopSeq}/shipmentId/${shipmentId}
 
   order:
     create_endpoint: https://dcorder.${envTag}.manhdev.com/api/dcorder/order

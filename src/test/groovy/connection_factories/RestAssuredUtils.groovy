@@ -9,15 +9,16 @@ import common_libs.CommonUtils
 class RestAssuredUtils {
 
     Response response
+    public static String token
     CommonUtils commonUtils = new CommonUtils();
 
     public def postRequest(String endURL, Object jsonObj) throws UnknownHostException {
         try {
             Map<String, String> map = new HashMap<String, String>()
-            map.put("Authorization", "Bearer" + tokenAuthentication())
+            map.put("Authorization", "Bearer" + token)
             map.put("Organization", "1")
             map.put("Location", "01")
-            return RestAssured.given()
+            response = RestAssured.given()
                     .config(RestAssured.config().sslConfig(new SSLConfig().allowAllHostnames()))
                     .headers(map)
                     .body(jsonObj)
@@ -25,6 +26,8 @@ class RestAssuredUtils {
                     .when()
                     .contentType("application/json")
                     .post(endURL)
+            println("Status: "+response.getStatusCode())
+            return response
         }
         catch (UnknownHostException e) {
             assert false: "Please check the URL"
@@ -48,62 +51,68 @@ class RestAssuredUtils {
                 .when()
                 .post(url)
         token = response.getBody().jsonPath().get("access_token")
-        println("Auth token https is : " + token)
+//        println("Auth token https is : " + token)
         return token
         
     }
 
-    public Response getRequest(String endURL, String contentType) {
+    public Response getRequest(String endURL) {
         try {
             Map<String, String> map = new HashMap<String, String>()
-            map.put("Authorization", "Bearer" + tokenAuthentication())
+            map.put("Authorization", "Bearer" + token)
             map.put("Organization", "1")
             map.put("Location", "01")
-            return RestAssured.given()
+            response = RestAssured.given()
                     .config(RestAssured.config().sslConfig(new SSLConfig().allowAllHostnames()))
                     .headers(map)
                     .relaxedHTTPSValidation("TLS")
                     .when()
-                    .contentType(contentType)
+                    .contentType("application/json")
                     .get(endURL)
+            println("Status: "+response.getStatusCode())
+            return response
         } catch (Exception e) {
             println("Get request failed with following exception" + e.printStackTrace())
         }
 
     }
 
-    public Response deleteRequest(String endURL, String contentType) {
+    public Response deleteRequest(String endURL) {
         try {
             Map<String, String> map = new HashMap<String, String>()
-            map.put("Authorization", "Bearer" + tokenAuthentication())
+            map.put("Authorization", "Bearer" + token)
             map.put("Organization", "1")
             map.put("Location", "01")
-            return RestAssured.given()
+            response = RestAssured.given()
                     .config(RestAssured.config().sslConfig(new SSLConfig().allowAllHostnames()))
                     .headers(map)
                     .relaxedHTTPSValidation("TLS")
                     .when()
-                    .contentType(contentType)
+                    .contentType("application/json")
                     .delete(endURL)
+            println("Status: "+response.getStatusCode())
+            return response
         } catch (Exception e) {
             println("Delete request failed with following exception" + e.printStackTrace())
         }
     }
 
-    public Response updateRequest(String endURL, Object jsonObj, String contentType) {
+    public Response updateRequest(String endURL, Object jsonObj) {
         try {
             Map<String, String> map = new HashMap<String, String>()
-            map.put("Authorization", "Bearer" + tokenAuthentication())
+            map.put("Authorization", "Bearer" + token)
             map.put("Organization", "1")
             map.put("Location", "01")
-            return RestAssured.given()
+            response = RestAssured.given()
                     .config(RestAssured.config().sslConfig(new SSLConfig().allowAllHostnames()))
                     .headers(map)
                     .body(jsonObj)
                     .relaxedHTTPSValidation("TLS")
                     .when()
-                    .contentType(contentType)
+                    .contentType("application/json")
                     .put(endURL)
+            println("Status: "+response.getStatusCode())
+            return response
         } catch (Exception e) {
             println("Update request failed with following exception" + e.printStackTrace())
         }

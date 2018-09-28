@@ -1,6 +1,7 @@
 package common_libs
 
 import com.jayway.restassured.response.Response
+import org.testng.Assert
 import org.yaml.snakeyaml.Yaml
 
 import java.sql.Timestamp
@@ -11,7 +12,7 @@ class CommonUtils {
 
     def mysql_url = [:]
     public static envParams = null
-    def envPath = 'sc2020devint'
+    def envPath = 'sc2020autoint'
 
     def generateAuthorizationToken() {
         def userName = 'supplychainadmin@1';
@@ -22,7 +23,6 @@ class CommonUtils {
         def config = read_properties()
         String url = config['app_config'][component][endPointUrl]
         url = url.replace('${envTag}',envPath)
-        println("URL = "+url)
         return url
     }
 
@@ -119,5 +119,9 @@ class CommonUtils {
 
     String getEnv_tag() {
         return envPath
+    }
+
+    def assertStatusCode(Response response){
+        Assert.assertEquals(response.getStatusCode(),200,"The webservice request is not successful, following error code is thorwn: "+response.getStatusCode())
     }
 }

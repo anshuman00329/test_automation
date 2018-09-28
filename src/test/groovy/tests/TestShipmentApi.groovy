@@ -13,6 +13,7 @@ import jsonTemplate.tenderTemplate.BaseAccept
 import jsonTemplate.tenderTemplate.BaseTender
 import jsonTemplate.tenderTemplate.BaseTenderRecall
 import jsonTemplate.tenderTemplate.BaseTenderReject
+import org.testng.Assert
 import org.testng.annotations.BeforeClass
 import org.testng.annotations.BeforeSuite
 import org.testng.annotations.Test
@@ -30,6 +31,7 @@ class TestShipmentApi {
     BaseTenderReject baseReject
     BaseTenderRecall baseRecall
     RestAssuredUtils restAssuredUtils = new RestAssuredUtils();
+    Response response
     def shipmentUtil
     def orderUtil
     def commonUtil
@@ -55,26 +57,29 @@ class TestShipmentApi {
     }
 
     @BeforeSuite
-    public preSuite(){
-        String token = restAssuredUtils.tokenAuthentication()
-        println("Token is:"+token)
+    public preSuite() {
+        RestAssuredUtils.token = restAssuredUtils.tokenAuthentication()
+        println("Global token is: " + RestAssuredUtils.token)
     }
-    @BeforeClass(enabled = true)
+
+    @BeforeClass(enabled = false)
     public void preConfig() {
-        /*Create a Insurance Company Party Qualifier*/
+        //Create a Insurance Company Party Qualifier
         partyqualifierid = "Insurance Company"
         shipmentPartyQualifier.setPartyqualifierid(partyqualifierid)
         shipmentPartyQualifier.setQualifierdescription("Adding Party Qualifier for Automation testing.")
         partyQualifierJson = shipmentPartyQualifier.buildjson()
         println("Party Qualifier json = " + partyQualifierJson)
-        shipmentUtil.createPartyQualifier(partyQualifierJson)
-        /*Create a Insurance Party Qualifier*/
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "party_qualifier"), partyQualifierJson)
+        commonUtil.assertStatusCode(response)
+        //Create a Insurance Party Qualifier
         partyqualifierid = "Insurance"
         shipmentPartyQualifier.setPartyqualifierid(partyqualifierid)
         shipmentPartyQualifier.setQualifierdescription("Adding Party Qualifier for Automation testing update.")
         partyQualifierJson = shipmentPartyQualifier.buildjson()
         println("Party Qualifier json = " + partyQualifierJson)
-        shipmentUtil.createPartyQualifier(partyQualifierJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "party_qualifier"), partyQualifierJson)
+        commonUtil.assertStatusCode(response)
     }
 
     @Test(description = "To create a 2 stop Shipment with all the entities added.")
@@ -85,8 +90,7 @@ class TestShipmentApi {
         def stop_actions = ['PU', 'DL']
         def orders = ['HAR_ORDER_41', 'HAR_ORDER_42']
         def involvedPatyId = 'eb1c47a-fc08-48a1-9340-f441c4ddec' + CommonUtils.getFourDigitRandomNumber()
-
-        //Create Shipment Json
+        partyqualifierid = "Insurance Company"
         shipment.setOrgid(orgId)
         shipment.setShipmentid(shipmentId)
         shipment.setAssignedcarrier(carrierId)
@@ -100,13 +104,14 @@ class TestShipmentApi {
         shipment.shipmentinvolvedparties = shipmentUtil.update_Involved_parties(shipment, involvedPatyId)
         shipmentJson = shipment.buildsimplejson()
         println("Shipment Json with 2 Stops =" + shipmentJson)
-        shipmentUtil.createShipment(shipmentJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+        commonUtil.assertStatusCode(response)
     }
 
     @Test(description = "Create a 4 Stop shipment, ensure check in Stop Table")
     public void createShipment() {
-        def shipmentId = 'HAR_SHIPMENT_01'
-        def carrierId = 'HAR_CARRIER_01'
+        def shipmentId = 'HAR_SHIPMENT_' + CommonUtils.getFourDigitRandomNumber()
+        def carrierId = 'HAR_CARRIER_' + CommonUtils.getFourDigitRandomNumber()
         def stop_facilities = ['FAC1', 'FAC2', 'FAC3', 'FAC4']
         def stop_actions = ['PU', 'DL', 'DL', 'DL']
         def orders = ['HAR_ORDER_41', 'HAR_ORDER_42', 'HAR_ORDER_43', 'HAR_ORDER_45']
@@ -127,16 +132,30 @@ class TestShipmentApi {
         shipment.shipmentinvolvedparties = shipmentUtil.update_Involved_parties(shipment, involvedPatyId)
         shipmentJson = shipment.buildsimplejson()
         println("Shipment Json with 4 Stops =" + shipmentJson)
-
         //Hit POST /api/scshipment/shipment/Save API, and validate the Shipment creation in db
-        shipmentUtil.createShipment(shipmentJson)
-        shipmentUtil.assert_for_Shipment_Stop(shipmentId, carrierId, stop_facilities, stop_actions)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+        commonUtil.assertStatusCode(response)
+        String getShipmentUrl = commonUtil.getUrl("shipment", "getshipment_endpoint")
+        getShipmentUrl = getShipmentUrl.replace('${shipmentId}', shipmentId)
+        response = restAssuredUtils.getRequest(getShipmentUrl)
+        commonUtil.assertStatusCode(response)
+        Assert.assertEquals(response.getBody().jsonPath().get("data.AssignedCarrier"), carrierId, "The expected carrier " + carrierId + " is not matching with the actual " + response.getBody().jsonPath().get("data.AssignedCarrier"))
+        for (int i = 0; i < stop_facilities.size(); i++) {
+            String getStopUrl = commonUtil.getUrl("shipment", "getstop_endpoint")
+            getStopUrl = getStopUrl.replace('${shipmentId}', shipmentId)
+            getStopUrl = getStopUrl.replace('${stopSeq}', "${i + 1}")
+            println("UTL = " + getStopUrl)
+            response = restAssuredUtils.getRequest(getStopUrl)
+            commonUtil.assertStatusCode(response)
+            Assert.assertEquals(response.getBody().jsonPath().get("data.StopFacilityId"), stop_facilities[i], "The expected Facility ID " + stop_facilities[i] + " is not matching with the actual " + response.getBody().jsonPath().get("data.StopFacilityId"))
+            Assert.assertEquals(response.getBody().jsonPath().get("data.StopAction"), stop_actions[i], "The expected Stop action: " + stop_facilities[i] + " is not matching with the actual " + response.getBody().jsonPath().get("data.StopFacilityId"))
+        }
     }
 
     @Test(description = "To create Shipment with Order Note")
     public void createShipmentWithNotes() {
-        def shipmentId = 'HAR_SHIPMENT_02'
-        def carrierId = 'HAR_CARRIER_02'
+        def shipmentId = 'HAR_SHIPMENT_' + CommonUtils.getFourDigitRandomNumber()
+        def carrierId = 'HAR_CARRIER_' + CommonUtils.getFourDigitRandomNumber()
         def stop_facilities = ['FAC1', 'FAC2', 'FAC3', 'FAC4']
         def stop_actions = ['PU', 'DL', 'DL', 'DL']
         def noteType = ['BOL', 'Shipping Label', 'PRO']
@@ -159,23 +178,30 @@ class TestShipmentApi {
         }
         shipmentNoteJson = shipment.buildShipmentNotejson()
         println("Shipment Json with Shipment Level Note is =" + shipmentNoteJson)
-
         //Create Note against a shipment
-        shipmentUtil.createShipment(shipmentNoteJson)
-        shipmentUtil.assert_for_Shipment_Level_Note(shipmentId, noteType, noteValue, noteCode, noteVisibility)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentNoteJson)
+        commonUtil.assertStatusCode(response)
+        String getShipmentUrl = commonUtil.getUrl("shipment", "getshipment_endpoint")
+        getShipmentUrl = getShipmentUrl.replace('${shipmentId}', shipmentId)
+        response = restAssuredUtils.getRequest(getShipmentUrl)
+        commonUtil.assertStatusCode(response)
+        for (int i = 0; i < noteType.size(); i++) {
+            Assert.assertEquals(response.getBody().jsonPath().get("data.ShipmentNote.NoteVisibility")[i], noteVisibility[i], "The expected Note Visibility " + noteVisibility[i] + " is not matching with the actual " + response.getBody().jsonPath().get("data.ShipmentNote.NoteVisibility")[i])
+            Assert.assertEquals(response.getBody().jsonPath().get("data.ShipmentNote.NoteValue")[i], noteValue[i], "The expected Note Visibility " + noteValue[i] + " is not matching with the actual " + response.getBody().jsonPath().get("data.ShipmentNote.NoteValue")[i])
+            Assert.assertEquals(response.getBody().jsonPath().get("data.ShipmentNote.NoteCode")[i], noteCode[i], "The expected Note Visibility " + noteCode[i] + " is not matching with the actual " + response.getBody().jsonPath().get("data.ShipmentNote.NoteCode")[i])
+            Assert.assertEquals(response.getBody().jsonPath().get("data.ShipmentNote.NoteType")[i], noteType[i], "The expected Note Visibility " + noteType[i] + " is not matching with the actual " + response.getBody().jsonPath().get("data.ShipmentNote.NoteType")[i])
+        }
     }
 
     @Test(description = "RESET functionality of shipment json. Reset both stop and Order Movement")
     public void createShipmentWithResetLogic() {
-        def shipmentId = 'HAR_SHIPMENT_04'
-        def carrierId = 'HAR_CARRIER_04'
+        def shipmentId = 'HAR_SHIPMENT_' + CommonUtils.getFourDigitRandomNumber()
+        def carrierId = 'HAR_CARRIER_' + CommonUtils.getFourDigitRandomNumber()
         def orders = ['HAR_ORDER_41', 'HAR_ORDER_42']
         def stop_facilities = ['FAC1', 'FAC2', 'FAC3', 'FAC4']
         def stop_actions = ['PU', 'DL', 'DL', 'DL']
         def involvedPatyId = 'eb1c47a-fc08-48a1-9340-f441c4ddec' + CommonUtils.getFourDigitRandomNumber()
         partyqualifierid = "Insurance Company"
-
-        //Create Shipment Json with Reset Logic
         shipment.setOrgid(orgId)
         shipment.setShipmentid(shipmentId)
         shipment.setPartyqualifierid(partyqualifierid)
@@ -188,11 +214,16 @@ class TestShipmentApi {
         }
         shipmentJson = shipment.buildShipmentjsonOrderMovement()
         println("Shipment Json with 4 Stops and 2 Order Movement=" + shipmentJson)
-
         //Hit POST /api/scshipment/shipment/Save API, and validate the Shipment creation in db
-        shipmentUtil.createShipment(shipmentJson)
-        shipmentUtil.assert_for_Shipment_Stop_OrdMov(shipmentId, carrierId, stop_facilities, stop_actions, orders)
-
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+        commonUtil.assertStatusCode(response)
+        String getShipmentUrl = commonUtil.getUrl("shipment", "getshipment_endpoint")
+        getShipmentUrl = getShipmentUrl.replace('${shipmentId}', shipmentId)
+        response = restAssuredUtils.getRequest(getShipmentUrl)
+        commonUtil.assertStatusCode(response)
+        for (int i = 0; i < orders.size(); i++) {
+            Assert.assertEquals(response.getBody().jsonPath().get("data.OrderMovement.OrderId")[i], orders[i], "The expected Note Visibility " + orders[i] + " is not matching with the actual " + response.getBody().jsonPath().get("data.OrderMovement.OrderId")[i])
+        }
         //shipment RESET LOGIC FOR STOP & ORDER MOVEMENT
         def resetOrders = ['HAR_ORDER_41']
         def reset_stop_facilities = ['FAC1', 'FAC2']
@@ -207,9 +238,15 @@ class TestShipmentApi {
         println("Shipment Reset Json with 2 Stops and 1 order movement =" + shipmentJson)
 
         //Hit POST /api/scshipment/shipment/Save API, and validate the Shipment creation in db
-        shipmentUtil.createShipment(shipmentJson)
-        shipmentUtil.assert_for_Shipment_Stop_OrdMov(shipmentId, carrierId, reset_stop_facilities, reset_stop_actions, resetOrders)
-
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+        commonUtil.assertStatusCode(response)
+        getShipmentUrl = commonUtil.getUrl("shipment", "getshipment_endpoint")
+        getShipmentUrl = getShipmentUrl.replace('${shipmentId}', shipmentId)
+        response = restAssuredUtils.getRequest(getShipmentUrl)
+        commonUtil.assertStatusCode(response)
+        for (int i = 0; i < resetOrders.size(); i++) {
+            Assert.assertEquals(response.getBody().jsonPath().get("data.OrderMovement.OrderId")[i], resetOrders[i], "The expected Note Visibility " + resetOrders[i] + " is not matching with the actual " + response.getBody().jsonPath().get("data.OrderMovement.OrderId")[i])
+        }
     }
 
     @Test(description = "To Create a Shipment with invalid data and check the Response code.")
@@ -219,8 +256,7 @@ class TestShipmentApi {
         def stop_facilities = ['FAC1', 'FAC2']
         def stop_actions = ['PU', 'DL']
         def orders = ['HAR_ORDER_41', 'HAR_ORDER_42']
-        def involvedPatyId = '0eb1c47a-fc08-48a1-9340-f441c4ddec'
-        def response
+        def involvedPatyId = '0eb1c47a-fc08-48a1-9340-f441c4ddec' + CommonUtils.getFourDigitRandomNumber()
         /*Pass Invalid Party Qualifier ID*/
         partyqualifierid = 'Dummy'
         /*Create Shipment Json*/
@@ -237,8 +273,8 @@ class TestShipmentApi {
         shipment.shipmentinvolvedparties = shipmentUtil.update_Involved_parties(shipment, involvedPatyId)
         shipmentJson = shipment.buildsimplejson()
         println("Shipment Json with 2 Stops =" + shipmentJson)
-        response = shipmentUtil.createInvalidShipment(shipmentJson)
-        shipmentUtil.assert_for_invalid_Shipment_Status_Code(response)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+        Assert.assertEquals(response.getStatusCode(), 400, "The response code is not 400....please check the logs for more information.")
     }
 
     @Test(description = "To Delete a Shipment and check the Response code.")
@@ -249,10 +285,7 @@ class TestShipmentApi {
         def stop_actions = ['PU', 'DL']
         def orders = ['HAR_ORDER_41', 'HAR_ORDER_42']
         def involvedPatyId = '0eb1c47a-fc08-48a1-9340-f441c4ddec' + CommonUtils.getFourDigitRandomNumber()
-        Response response
         partyqualifierid = "Insurance Company"
-        /*Create Shipment Json*/
-
         shipment.setOrgid(orgId)
         shipment.setShipmentid(shipmentId)
         shipment.setAssignedcarrier(carrierId)
@@ -266,11 +299,17 @@ class TestShipmentApi {
         shipment.shipmentinvolvedparties = shipmentUtil.update_Involved_parties(shipment, involvedPatyId)
         shipmentJson = shipment.buildsimplejson()
         println("Shipment Json with 2 Stops =" + shipmentJson)
-        shipmentUtil.createShipment(shipmentJson)
-        response = shipmentUtil.getShipment(shipmentId)
-        println(response.getBody().jsonPath().get("data.PK"))
-        Response deleteResponse = shipmentUtil.deleteShipment(response.getBody().jsonPath().get("data.PK"))
-        shipmentUtil.assert_for_delete_Shipment_Status_Code(deleteResponse.getStatusCode())
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+        commonUtil.assertStatusCode(response)
+        String getShipmentUrl = commonUtil.getUrl("shipment", "getshipment_endpoint")
+        getShipmentUrl = getShipmentUrl.replace('${shipmentId}', shipmentId)
+        response = restAssuredUtils.getRequest(getShipmentUrl)
+        commonUtil.assertStatusCode(response)
+        println("PK: " + response.getBody().jsonPath().get("data.PK"))
+        String deleteShipmentUrl = commonUtil.getUrl("shipment", "deleteshipment_endpoint")
+        deleteShipmentUrl = deleteShipmentUrl.replace('${pk}', response.getBody().jsonPath().get("data.PK"))
+        Response deleteResponse = restAssuredUtils.deleteRequest(deleteShipmentUrl)
+        Assert.assertEquals(deleteResponse.getStatusCode(), 200, "The response code is not 200....please check the logs for more information.")
     }
 
     @Test(description = "To update the existing Shipment entity and validate the response")
@@ -281,7 +320,6 @@ class TestShipmentApi {
         def stop_actions = ['PU', 'DL']
         def orders = ['HAR_ORDER_41', 'HAR_ORDER_42']
         def involvedPatyId = '0eb1c47a-fc08-48a1-9340-f441c4ddec' + CommonUtils.getFourDigitRandomNumber()
-        Response response
         partyqualifierid = "Insurance Company"
         /*Create Shipment Json*/
         shipment.setOrgid(orgId)
@@ -297,9 +335,9 @@ class TestShipmentApi {
         shipment.shipmentinvolvedparties = shipmentUtil.update_Involved_parties(shipment, involvedPatyId)
         shipmentJson = shipment.buildsimplejson()
         println("Shipment Json with 2 Stops =" + shipmentJson)
-        shipmentUtil.createShipment(shipmentJson)
-        shipmentUtil.getShipment(shipmentId)
-        /*Create a new Party Qualifier to update the Shipment*/
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+        commonUtil.assertStatusCode(response)
+        /*Update Party Qualifier to update the Shipment*/
         partyqualifierid = "Insurance"
         shipment.setOrgid(orgId)
         shipment.setShipmentid(shipmentId)
@@ -314,10 +352,16 @@ class TestShipmentApi {
         shipment.shipmentinvolvedparties = shipmentUtil.update_Involved_parties(shipment, involvedPatyId)
         shipmentJson = shipment.buildsimplejson()
         println("Shipment Json with 2 Stops =" + shipmentJson)
-        shipmentUtil.updateShipment(shipmentJson, shipmentId)
-        response = shipmentUtil.getShipment(shipmentId)
+        String updateShipmentUrl = commonUtil.getUrl("shipment", "udpateshipment_endpoint")
+        updateShipmentUrl = updateShipmentUrl.replace('${shipmentId}', shipmentId)
+        response = restAssuredUtils.updateRequest(updateShipmentUrl, shipmentJson)
+        commonUtil.assertStatusCode(response)
+        String getShipmentUrl = commonUtil.getUrl("shipment", "getshipment_endpoint")
+        getShipmentUrl = getShipmentUrl.replace('${shipmentId}', shipmentId)
+        response = restAssuredUtils.getRequest(getShipmentUrl)
+        commonUtil.assertStatusCode(response)
         def actualPartyQualifierId = response.getBody().jsonPath().get("data.InvolvedParties.PartyQualifier.PartyQualifierId")[0]
-        shipmentUtil.assert_for_update_Shipment(actualPartyQualifierId)
+        Assert.assertEquals(actualPartyQualifierId, partyqualifierid, "The expected qualifier is " + partyqualifierid + " but found " + actualPartyQualifierId)
     }
 
     @Test(description = "Create a Shipment and perform TENDER, ACCEPT, REJECT of Shipment and check the status")
@@ -328,7 +372,6 @@ class TestShipmentApi {
         def stop_actions = ['PU', 'DL']
         def orders = ['HAR_ORDER_41', 'HAR_ORDER_42']
         def reasonCode = 'REASON_CODE1'
-        Response response
         /*Create Shipment Json*/
         shipment.setOrgid(orgId)
         shipment.setShipmentid(shipmentId)
@@ -341,26 +384,36 @@ class TestShipmentApi {
         }
         shipmentJson = shipment.buildShipmentjsonOrderMovement()
         println("Shipment Json =" + shipmentJson)
-        shipmentUtil.createShipment(shipmentJson)
-
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+        commonUtil.assertStatusCode(response)
         /*Create Tender Json*/
         baseTender.setShipmentid(shipmentId)
         tenderJson = baseTender.buildjson()
         println("Tender Json =" + tenderJson)
-        tenderApi.tenderMsg(tenderJson, "endpoint")
-        response = tenderApi.getTender(shipmentId, carrierId)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "endpoint"), tenderJson)
+        commonUtil.assertStatusCode(response)
+        String getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
+        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        response = restAssuredUtils.getRequest(getTenderUrl)
+        commonUtil.assertStatusCode(response)
         def tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
-        shipmentUtil.assert_for_tender_Status("TENDERED", tenderStatus)
+        Assert.assertEquals(tenderStatus, "TENDERED", "The expected qualifier is TENDERED but found " + tenderStatus)
 
         /*Create Tender Accept Json*/
         baseAccept.setShipmentid(shipmentId)
         baseAccept.setCarrierid(carrierId)
         tenderAcceptJson = baseAccept.buildjson()
         println("Accept Json =" + tenderAcceptJson)
-        tenderApi.tenderMsg(tenderAcceptJson, "acceptendpoint")
-        response = tenderApi.getTender(shipmentId, carrierId)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "acceptendpoint"), tenderAcceptJson)
+        commonUtil.assertStatusCode(response)
+        getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
+        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        response = restAssuredUtils.getRequest(getTenderUrl)
+        commonUtil.assertStatusCode(response)
         tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
-        shipmentUtil.assert_for_tender_Status("ACCEPTED", tenderStatus)
+        Assert.assertEquals(tenderStatus, "ACCEPTED", "The expected qualifier is ACCEPTED but found " + tenderStatus)
 
         /*Create Tender Reject Json*/
         baseReject.setShipmentid(shipmentId)
@@ -368,21 +421,24 @@ class TestShipmentApi {
         baseReject.setReasoncode(reasonCode)
         tenderRejectJson = baseReject.buildjson()
         println("Reject Json =" + tenderRejectJson)
-        tenderApi.tenderMsg(tenderRejectJson, "rejectendpoint")
-        response = tenderApi.getTender(shipmentId, carrierId)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "rejectendpoint"), tenderRejectJson)
+        commonUtil.assertStatusCode(response)
+        getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
+        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        response = restAssuredUtils.getRequest(getTenderUrl)
+        commonUtil.assertStatusCode(response)
         tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
-        shipmentUtil.assert_for_tender_Status("REJECTED", tenderStatus)
+        Assert.assertEquals(tenderStatus, "REJECTED", "The expected qualifier is REJECTED but found " + tenderStatus)
     }
 
     @Test(description = "To add an order to the Shipment and check whether the Order planned status is changed to Planned or not.")
     public void createDistributionOrder() {
-        def orderId = 'Par_Order_' + CommonUtils.getFourDigitRandomNumber()
+        def orderId = 'PAR_ORDER_' + CommonUtils.getFourDigitRandomNumber()
         def orderType = 'PAR_WAVE_' + CommonUtils.getFourDigitRandomNumber()
         def order_origin_facility = 'FAC1'
         def order_destination_facility = 'FAC2'
         def order_line_item = ['HAR_ITEM01']
-        Response response
-        /*Create Order Json*/
         order.setOrderId(orderId)
         order.setOrderType(orderType)
         order.setOriginFacilityId(order_origin_facility)
@@ -393,13 +449,13 @@ class TestShipmentApi {
         }
         orderJson = order.buildjson()
         println("Distribution Order json -> " + orderJson)
-        orderUtil.createDistributionOrder(orderJson)
-        /*Create a Shipment with the order which is created*/
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("order", "create_endpoint"), orderJson)
+        commonUtil.assertStatusCode(response)
         def shipmentId = 'SHIP_ORDER_' + CommonUtils.getFourDigitRandomNumber()
         def carrierId = 'SHIP_CARRIER_' + CommonUtils.getFourDigitRandomNumber()
         def stop_facilities = ['FAC1', 'FAC2']
         def stop_actions = ['PU', 'DL']
-        def orders = ['HAR_ORDER_41', 'HAR_ORDER_42']
+        def orders = [orderId]
         def reasonCode = 'REASON_CODE1'
         /*Create Shipment Json*/
         shipment.setOrgid(orgId)
@@ -413,13 +469,17 @@ class TestShipmentApi {
         }
         shipmentJson = shipment.buildShipmentjsonOrderMovement()
         println("Shipment Json =" + shipmentJson)
-        shipmentUtil.createShipment(shipmentJson)
-        response = orderUtil.getOrder(orderId)
-        println(response.getBody().jsonPath().get("data.PlanningStatus"))
-
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+        commonUtil.assertStatusCode(response)
+        String getOrderUrl = commonUtil.getUrl("order", "get_endpoint")
+        getOrderUrl = getOrderUrl.replace('${orderId}', orderId)
+        response = restAssuredUtils.getRequest(getOrderUrl)
+        commonUtil.assertStatusCode(response)
+        Assert.assertEquals(response.getBody().jsonPath().get("data.PlanningStatus"), "Planned", "The expected Status is Planned" + " but found " + response.getBody().jsonPath().get("data.PlanningStatus"));
     }
+
     @Test(description = 'temperory', enabled = false)
-    public void temp(){
+    public void temp() {
         def shipmentId = 'PAR_SHIPMENT_' + CommonUtils.getFourDigitRandomNumber()
         def carrierId = 'PAR_CARRIER_' + CommonUtils.getFourDigitRandomNumber()
         def stop_facilities = ['FAC1', 'FAC2']
@@ -442,8 +502,8 @@ class TestShipmentApi {
         shipment.shipmentinvolvedparties = shipmentUtil.update_Involved_parties(shipment, involvedPatyId)
         shipmentJson = shipment.buildsimplejson()
         println("Shipment Json with 2 Stops =" + shipmentJson)
-        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment","endpoint"), shipmentJson)
-        println("Status = " +response.getStatusCode())
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "endpoint"), shipmentJson)
+        println("Status = " + response.getStatusCode())
         //shipmentUtil.getShipment(shipmentId)
     }
 }
