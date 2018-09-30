@@ -7,6 +7,7 @@
 	<test name="Test">
 		<classes>
 		<class name="tests.TestShipmentApi" />
+		<class name="tests.TestTenderApi"/>
 		</classes>
 	</test> <!-- Test -->
 </suite> <!-- Suite -->

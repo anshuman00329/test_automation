@@ -66,7 +66,7 @@ class BaseShipment {
         dynamiccarrieropteligible = true
         criteriaid = "56872354"
         partyqualifierid = ''
-        shipmentactions =1.collect {new BaseShipmentActionReset()}
+        shipmentactions =new BaseShipmentActionReset()
         shipmentstops = (1..2).collect{new BaseShipmentStop(orgid,shipmentid)}
         shipmentordermovements = 1.collect {new BaseShipmentOrderMovement(orgid,shipmentid)}
         shipmentinvolvedparties = 1.collect{new BaseShipmentInvolvedParties(orgid,shipmentid,partyqualifierid)}
@@ -141,9 +141,7 @@ class BaseShipment {
         def json = new JsonBuilder()
         def root = json {
             Orgid this.orgid
-            Actions(
-                    this.shipmentactions.collect {it.buildjson(delegate)}
-            )
+            Actions this.shipmentactions.each {it.buildjson(delegate)}
             AssignedCarrier this.assignedcarrier
             ShipmentId this.shipmentid
             TransportationStatus this.transportationstatus
