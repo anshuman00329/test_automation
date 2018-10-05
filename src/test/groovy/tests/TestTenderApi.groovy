@@ -56,12 +56,6 @@ class TestTenderApi {
         orgId = '1'
     }
 
-    @BeforeSuite
-    public preSuite() {
-        RestAssuredUtils.token = restAssuredUtils.tokenAuthentication()
-        println("Global token is: " + RestAssuredUtils.token)
-    }
-
     @BeforeClass()
     public void beforeClass() {
         //Set the TenderAutoAccept=fale
