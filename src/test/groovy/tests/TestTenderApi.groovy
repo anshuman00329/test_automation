@@ -22,8 +22,7 @@ import com.jayway.restassured.response.Response
 class TestTenderApi {
 
     BaseShipment shipment
-    def shipmentUtil
-    def commonUtil
+    def shipmentUtil, commonUtil
     def minimum_days_from_now
     def orgId
     BaseTender baseTender
@@ -55,6 +54,12 @@ class TestTenderApi {
         baseTenderConfig = new BaseTenderConfig()
         restAssuredUtils = new RestAssuredUtils()
         orgId = '1'
+    }
+
+    @BeforeSuite
+    public preSuite() {
+        RestAssuredUtils.token = restAssuredUtils.tokenAuthentication()
+        println("Global token is: " + RestAssuredUtils.token)
     }
 
     @BeforeClass()
@@ -403,54 +408,63 @@ class TestTenderApi {
         Assert.assertEquals(tenderStatus, "REJECTED", "The expected qualifier is REJECTED but found " + tenderStatus)
     }
 
-    @Test(description = "Try to Tender/Accept/Reject and invalid shipment and validate the error message")
+    @Test(description = "Try to Tender/Accept/Reject/Recall an invalid shipment and validate the error message")
     public void validationFlowsForInvalidShipmentTest() {
 
         Response response
         def shipmentId = 'InvalidShipment_' + CommonUtils.getFourDigitRandomNumber()
-
+        def carrierId = 'STARL_CARRIER_' + CommonUtils.getFourDigitRandomNumber()
+        def reasonCode = 'REASON_CODE1'
         String expectedErrorMessageForTenderAction = "Shipment not found for business keys: shipmentId: ${shipmentId}."
         String expectedErrorMessageForAcceptAction = "The shipment is not in an eligible status to perform this action."
-        String expectedErrorMessageForRejectAction = ""
-        String expectedErrorMessageForRecallAction = ""
+        String expectedErrorMessageForRejectAction = "The shipment is not in an eligible status to perform this action."
+        String expectedErrorMessageForRecallAction = "The shipment is not in an eligible status to perform this action."
 
         String actualErrorMessageForTenderAction, actualErrorMessageForAcceptAction, actualErrorMessageForRejectAction, actualErrorMessageForRecallAction
 
-        //Create Tender Json
+        //Tender Invalid shipment and validate error message
         baseTender.setShipmentid(shipmentId)
         tenderJson = baseTender.buildjson()
         println("Tender Json =" + tenderJson)
-
-        //Tender Invalid shipment and validate error message
         response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "endpoint"), tenderJson)
         actualErrorMessageForTenderAction = response.getBody().jsonPath().get("exceptions.message")[0]
         println("Validating error message when Invalid shipment is Tendered")
         assert expectedErrorMessageForTenderAction.equals(actualErrorMessageForTenderAction): "actual and expected error message are not same when an invalid shipment is Tendered"
-        println("Error message is successfully validated")
 
         //Accept Invalid shipment and validate error message
-        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "acceptendpoint"), tenderJson)
+        baseAccept.setShipmentid(shipmentId)
+        baseAccept.setCarrierid(carrierId)
+        tenderAcceptJson = baseAccept.buildjson()
+        println("Accept Json =" + tenderAcceptJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "acceptendpoint"), tenderAcceptJson)
         actualErrorMessageForAcceptAction = response.getBody().jsonPath().get("messages.Message.Description")[0]
         println("Validating error message when Invalid shipment is Accepted")
-        assert actualErrorMessageForAcceptAction.equals(actualErrorMessageForAcceptAction): "actual and expected error message are not same when an invalid shipment is Tendered"
-        println("Error message is successfully validated")
+        assert expectedErrorMessageForAcceptAction.equals(actualErrorMessageForAcceptAction): "actual and expected error message are not same when an invalid shipment is Tendered"
 
         //Reject Invalid shipment and validate error message
-        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "rejectendpoint"), tenderJson)
+        baseReject.setShipmentid(shipmentId)
+        baseReject.setCarrierid(carrierId)
+        baseReject.setReasoncode(reasonCode)
+        tenderRejectJson = baseReject.buildjson()
+        println("Reject Json =" + tenderRejectJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "rejectendpoint"), tenderRejectJson)
         actualErrorMessageForRejectAction = response.getBody().jsonPath().get("messages.Message.Description")[0]
         println("Validating error message when Invalid shipment is Rejected")
-        assert actualErrorMessageForRejectAction.equals(actualErrorMessageForRejectAction): "actual and expected error message are not same when an invalid shipment is Tendered"
-        println("Error message is successfully validated")
+        assert expectedErrorMessageForRejectAction.equals(actualErrorMessageForRejectAction): "actual and expected error message are not same when an invalid shipment is Tendered"
 
         //Recall Invalid shipment and validate error message
-        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "recallendpoint"), tenderJson)
+        baseRecall.setShipmentid(shipmentId)
+        baseRecall.setCarrierid(carrierId)
+        baseRecall.setReasoncode(reasonCode)
+        tenderRecallJson = baseRecall.buildjson()
+        println("Recall Json =" + tenderRecallJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "recallendpoint"), tenderRecallJson)
         actualErrorMessageForRecallAction = response.getBody().jsonPath().get("messages.Message.Description")[0]
         println("Validating error message when Invalid shipment is Recalled")
-        assert actualErrorMessageForRecallAction.equals(actualErrorMessageForRecallAction): "actual and expected error message are not same when an invalid shipment is Tendered"
-        println("Error message is successfully validated")
+        assert expectedErrorMessageForRecallAction.equals(actualErrorMessageForRecallAction): "actual and expected error message are not same when an invalid shipment is Tendered"
     }
 
-    @Test(description = "Tender already tendered shipment and validate the response")
+    @Test(description = "Tender already Tendered shipment and validate the response")
     public void tenderAlreadyTenderedShipmentTest() {
 
         Response response
@@ -459,7 +473,7 @@ class TestTenderApi {
         def expectedErrorMessageForTenderAction = "A tender request has already been sent to the carrier"
         def actualErrorMessageForTenderAction
 
-        //Create Shipment Json
+        //Create the Shipment
         shipment.setOrgid(orgId)
         shipment.setShipmentid(shipmentId)
         shipment.setAssignedcarrier(carrierId)
@@ -474,7 +488,7 @@ class TestTenderApi {
         response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
         commonUtil.assertStatusCode(response)
 
-        //Create Tender Json
+        //Tender the shipment
         baseTender.setShipmentid(shipmentId)
         tenderJson = baseTender.buildjson()
         println("Tender Json =" + tenderJson)
@@ -488,10 +502,293 @@ class TestTenderApi {
         def tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
         Assert.assertEquals(tenderStatus, "TENDERED", "The expected qualifier is TENDERED but found " + tenderStatus)
 
-        //Tender the same shipment again
+        //Tender the same shipment again and validate the error message
         response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "endpoint"), tenderJson)
         actualErrorMessageForTenderAction = response.getBody().jsonPath().get("messages.Message.Description")[0]
         assert actualErrorMessageForTenderAction.equals(expectedErrorMessageForTenderAction): "actual and expected error message are not same when an already Tendered shipment is Tendered"
+    }
+
+    @Test(description = "Accept/Tender already Accepted shipment and validate the response")
+    public void acceptAlreadyAcceptedShipmentTest() {
+
+        Response response
+        def shipmentId = 'STARL_SHIPMENT_' + CommonUtils.getFourDigitRandomNumber()
+        def carrierId = 'STARL_CARRIER_' + CommonUtils.getFourDigitRandomNumber()
+        def expectedErrorMessageForAcceptAction = "The shipment is not in an eligible status to perform this action."
+        def expectedErrorMessageForResetAction = "The shipment is not in an eligible status to perform this action."
+        def expectedErrorMessageForTenderAction = "The shipment has already been Accepted."
+        def actualErrorMessageForAcceptAction, actualErrorMessageForTenderAction, actualErrorMessageForResetAction
+
+        //Create the Shipment
+        shipment.setOrgid(orgId)
+        shipment.setShipmentid(shipmentId)
+        shipment.setAssignedcarrier(carrierId)
+        shipment.shipmentstops = stop_facilities.collect {
+            shipmentUtil.update_facilities_and_stops_on_tlm_shipment(stop_facilities.indexOf(it), shipment, minimum_days_from_now, stop_facilities, stop_actions)
+        }
+        shipment.shipmentordermovements = orders.collect {
+            shipmentUtil.update_order_movement(orders.indexOf(it), shipment, orders)
+        }
+        shipmentJson = shipment.buildShipmentjsonOrderMovement()
+        println("Shipment Json =" + shipmentJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+        commonUtil.assertStatusCode(response)
+
+        //Tender the shipment
+        baseTender.setShipmentid(shipmentId)
+        tenderJson = baseTender.buildjson()
+        println("Tender Json =" + tenderJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "endpoint"), tenderJson)
+        commonUtil.assertStatusCode(response)
+        String getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
+        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        response = restAssuredUtils.getRequest(getTenderUrl)
+        commonUtil.assertStatusCode(response)
+        def tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
+        Assert.assertEquals(tenderStatus, "TENDERED", "The expected qualifier is TENDERED but found " + tenderStatus)
+
+        //Accept the shipment
+        baseAccept.setShipmentid(shipmentId)
+        baseAccept.setCarrierid(carrierId)
+        tenderAcceptJson = baseAccept.buildjson()
+        println("Accept Json =" + tenderAcceptJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "acceptendpoint"), tenderAcceptJson)
+        commonUtil.assertStatusCode(response)
+        getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
+        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        response = restAssuredUtils.getRequest(getTenderUrl)
+        commonUtil.assertStatusCode(response)
+        tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
+        Assert.assertEquals(tenderStatus, "ACCEPTED", "The expected qualifier is ACCEPTED but found " + tenderStatus)
+
+        //Accept the same shipment again and validate the error message
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "acceptendpoint"), tenderAcceptJson)
+        actualErrorMessageForAcceptAction = response.getBody().jsonPath().get("messages.Message.Description")[0]
+        assert actualErrorMessageForAcceptAction.equals(expectedErrorMessageForAcceptAction): "actual and expected error message are not same when an already Accepted shipment is Accepted"
+
+        //Tender already Accepted shipment and validate the error message
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "endpoint"), tenderJson)
+        actualErrorMessageForTenderAction = response.getBody().jsonPath().get("messages.Message.Description")[0]
+        assert actualErrorMessageForTenderAction.equals(expectedErrorMessageForTenderAction): "actual and expected error message are not same when an already Tendered shipment is Tendered"
+    }
+
+    @Test(description = "Accept/Reject/Recall already Rejected shipment and validate the response")
+    public void rejectAlreadyRejectedShipmentTest() {
+
+        Response response
+        def shipmentId = 'STARL_SHIPMENT_' + CommonUtils.getFourDigitRandomNumber()
+        def carrierId = 'STARL_CARRIER_' + CommonUtils.getFourDigitRandomNumber()
+        def reasonCode = 'REASON_CODE1'
+        def expectedErrorMessage = "The shipment is not in an eligible status to perform this action."
+        def actualErrorMessageForAcceptAction, actualErrorMessageForRejectAction, actualErrorMessageForRecallAction
+
+        //Create the Shipment
+        shipment.setOrgid(orgId)
+        shipment.setShipmentid(shipmentId)
+        shipment.setAssignedcarrier(carrierId)
+        shipment.shipmentstops = stop_facilities.collect {
+            shipmentUtil.update_facilities_and_stops_on_tlm_shipment(stop_facilities.indexOf(it), shipment, minimum_days_from_now, stop_facilities, stop_actions)
+        }
+        shipment.shipmentordermovements = orders.collect {
+            shipmentUtil.update_order_movement(orders.indexOf(it), shipment, orders)
+        }
+        shipmentJson = shipment.buildShipmentjsonOrderMovement()
+        println("Shipment Json =" + shipmentJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+        commonUtil.assertStatusCode(response)
+
+        //Tender the shipment
+        baseTender.setShipmentid(shipmentId)
+        tenderJson = baseTender.buildjson()
+        println("Tender Json =" + tenderJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "endpoint"), tenderJson)
+        commonUtil.assertStatusCode(response)
+        String getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
+        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        response = restAssuredUtils.getRequest(getTenderUrl)
+        commonUtil.assertStatusCode(response)
+        def tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
+        Assert.assertEquals(tenderStatus, "TENDERED", "The expected qualifier is TENDERED but found " + tenderStatus)
+
+        //Accept the shipment
+        baseAccept.setShipmentid(shipmentId)
+        baseAccept.setCarrierid(carrierId)
+        tenderAcceptJson = baseAccept.buildjson()
+        println("Accept Json =" + tenderAcceptJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "acceptendpoint"), tenderAcceptJson)
+        commonUtil.assertStatusCode(response)
+        getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
+        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        response = restAssuredUtils.getRequest(getTenderUrl)
+        commonUtil.assertStatusCode(response)
+        tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
+        Assert.assertEquals(tenderStatus, "ACCEPTED", "The expected qualifier is ACCEPTED but found " + tenderStatus)
+
+        //Reject the Shipment
+        baseReject.setShipmentid(shipmentId)
+        baseReject.setCarrierid(carrierId)
+        baseReject.setReasoncode(reasonCode)
+        tenderRejectJson = baseReject.buildjson()
+        println("Reject Json =" + tenderRejectJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "rejectendpoint"), tenderRejectJson)
+        commonUtil.assertStatusCode(response)
+        getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
+        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        response = restAssuredUtils.getRequest(getTenderUrl)
+        commonUtil.assertStatusCode(response)
+        tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
+        Assert.assertEquals(tenderStatus, "REJECTED", "The expected qualifier is REJECTED but found " + tenderStatus)
+
+        //Accept the same shipment again and validate the error message
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "acceptendpoint"), tenderAcceptJson)
+        actualErrorMessageForAcceptAction = response.getBody().jsonPath().get("messages.Message.Description")[0]
+        assert actualErrorMessageForAcceptAction.equals(expectedErrorMessage): "actual and expected error message are not same when an already Accepted shipment is Accepted"
+
+        //Reject the same shipment again and validate the error message
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "rejectendpoint"), tenderRejectJson)
+        actualErrorMessageForRejectAction = response.getBody().jsonPath().get("messages.Message.Description")[0]
+        assert actualErrorMessageForRejectAction.equals(expectedErrorMessage): "actual and expected error message are not same when an already Rejected shipment is Rejected"
+
+        //Recall Invalid shipment and validate error message
+        baseRecall.setShipmentid(shipmentId)
+        baseRecall.setCarrierid(carrierId)
+        baseRecall.setReasoncode(reasonCode)
+        tenderRecallJson = baseRecall.buildjson()
+        println("Recall Json =" + tenderRecallJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "recallendpoint"), tenderRecallJson)
+        actualErrorMessageForRecallAction = response.getBody().jsonPath().get("messages.Message.Description")[0]
+        println("Validating error message when Invalid shipment is Recalled")
+        assert actualErrorMessageForRecallAction.equals(actualErrorMessageForRecallAction): "actual and expected error message are not same when an invalid shipment is Tendered"
+    }
+
+    @Test(description = "Accept/Reject/Recall already Recalled shipment and validate the response")
+    public void recallAlreadyRecalledShipmentTest() {
+
+        Response response
+        def shipmentId = 'STARL_SHIPMENT_' + CommonUtils.getFourDigitRandomNumber()
+        def carrierId = 'STARL_CARRIER_' + CommonUtils.getFourDigitRandomNumber()
+        def reasonCode = 'REASON_CODE1'
+        def expectedErrorMessage = "The shipment is not in an eligible status to perform this action."
+        def actualErrorMessageForAcceptAction, actualErrorMessageForRejectAction, actualErrorMessageForRecallAction
+
+        //Create the Shipment
+        shipment.setOrgid(orgId)
+        shipment.setShipmentid(shipmentId)
+        shipment.setAssignedcarrier(carrierId)
+        shipment.shipmentstops = stop_facilities.collect {
+            shipmentUtil.update_facilities_and_stops_on_tlm_shipment(stop_facilities.indexOf(it), shipment, minimum_days_from_now, stop_facilities, stop_actions)
+        }
+        shipment.shipmentordermovements = orders.collect {
+            shipmentUtil.update_order_movement(orders.indexOf(it), shipment, orders)
+        }
+        shipmentJson = shipment.buildShipmentjsonOrderMovement()
+        println("Shipment Json =" + shipmentJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+        commonUtil.assertStatusCode(response)
+
+        //Tender the shipment
+        baseTender.setShipmentid(shipmentId)
+        tenderJson = baseTender.buildjson()
+        println("Tender Json =" + tenderJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "endpoint"), tenderJson)
+        commonUtil.assertStatusCode(response)
+        String getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
+        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        response = restAssuredUtils.getRequest(getTenderUrl)
+        commonUtil.assertStatusCode(response)
+        def tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
+        Assert.assertEquals(tenderStatus, "TENDERED", "The expected qualifier is TENDERED but found " + tenderStatus)
+
+        //Accept the shipment
+        baseAccept.setShipmentid(shipmentId)
+        baseAccept.setCarrierid(carrierId)
+        tenderAcceptJson = baseAccept.buildjson()
+        println("Accept Json =" + tenderAcceptJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "acceptendpoint"), tenderAcceptJson)
+        commonUtil.assertStatusCode(response)
+        getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
+        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        response = restAssuredUtils.getRequest(getTenderUrl)
+        commonUtil.assertStatusCode(response)
+        tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
+        Assert.assertEquals(tenderStatus, "ACCEPTED", "The expected qualifier is ACCEPTED but found " + tenderStatus)
+
+        //Recall the Shipment
+        baseRecall.setShipmentid(shipmentId)
+        baseRecall.setCarrierid(carrierId)
+        baseRecall.setReasoncode(reasonCode)
+        tenderRecallJson = baseRecall.buildjson()
+        println("Recall Json =" + tenderRecallJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "recallendpoint"), tenderRecallJson)
+        commonUtil.assertStatusCode(response)
+        getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
+        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        response = restAssuredUtils.getRequest(getTenderUrl)
+        commonUtil.assertStatusCode(response)
+        tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
+        Assert.assertEquals(tenderStatus, "RECALLED", "The expected qualifier is RECALLED but found " + tenderStatus)
+
+        //Accept the same shipment again and validate the error message
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "acceptendpoint"), tenderAcceptJson)
+        actualErrorMessageForAcceptAction = response.getBody().jsonPath().get("messages.Message.Description")[0]
+        assert actualErrorMessageForAcceptAction.equals(expectedErrorMessage): "actual and expected error message are not same when an already Accepted shipment is Accepted"
+
+        //Reject Invalid shipment and validate error message
+        baseReject.setShipmentid(shipmentId)
+        baseReject.setCarrierid(carrierId)
+        baseReject.setReasoncode(reasonCode)
+        tenderRejectJson = baseReject.buildjson()
+        println("Reject Json =" + tenderRejectJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "rejectendpoint"), tenderRejectJson)
+        actualErrorMessageForRejectAction = response.getBody().jsonPath().get("messages.Message.Description")[0]
+        println("Validating error message when Invalid shipment is Rejected")
+        assert actualErrorMessageForRejectAction.equals(expectedErrorMessage): "actual and expected error message are not same when an invalid shipment is Tendered"
+
+        //Recall the same shipment again and validate the error message
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "rejectendpoint"), tenderRecallJson)
+        actualErrorMessageForRecallAction = response.getBody().jsonPath().get("messages.Message.Description")[0]
+        assert actualErrorMessageForRecallAction.equals(expectedErrorMessage): "actual and expected error message are not same when an already Recalled shipment is Recalled"
+    }
+
+    @Test(description = "Tender a shipment with null carrier and validate the response")
+    public void tenderShipmentWithNullCarrierTest() {
+
+        Response response
+        def shipmentId = 'STARL_SHIPMENT_' + CommonUtils.getFourDigitRandomNumber()
+        def carrierId = null
+        def expectedErrorMessage = "Carrier is not assigned to shipment, Please assign and then tender it"
+        def actualErrorMessageForTenderAction
+
+        //Create the Shipment
+        shipment.setOrgid(orgId)
+        shipment.setShipmentid(shipmentId)
+        shipment.setAssignedcarrier(carrierId)
+        shipment.shipmentstops = stop_facilities.collect {
+            shipmentUtil.update_facilities_and_stops_on_tlm_shipment(stop_facilities.indexOf(it), shipment, minimum_days_from_now, stop_facilities, stop_actions)
+        }
+        shipment.shipmentordermovements = orders.collect {
+            shipmentUtil.update_order_movement(orders.indexOf(it), shipment, orders)
+        }
+        shipmentJson = shipment.buildShipmentjsonOrderMovement()
+        println("Shipment Json =" + shipmentJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+        commonUtil.assertStatusCode(response)
+
+        //Tender the shipment
+        baseTender.setShipmentid(shipmentId)
+        tenderJson = baseTender.buildjson()
+        println("Tender Json =" + tenderJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "endpoint"), tenderJson)
+        actualErrorMessageForTenderAction = response.getBody().jsonPath().get("messages.Message.Description")[0]
+        assert actualErrorMessageForTenderAction.equals(expectedErrorMessage): "actual and expected error message are not same when an already Recalled shipment is Recalled"
     }
 }
 
