@@ -8,6 +8,22 @@ app_config:
     party_qualifier: https://scshipment.${envTag}.manhdev.com/api/scshipment/partyQualifier
     getstop_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/stop/stopSeq/${stopSeq}/shipmentId/${shipmentId}
 
+  involvedparties:
+    create_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/involvedParties
+    get_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/involvedParties/involvedPartyId/{involvedPartyId}
+    update_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/involvedParties/involvedPartyId/{involvedPartyId}
+    delete_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/involvedParties/{pk}
+    masscreate_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/involvedParties/massCreate
+
+  partyqualifier:
+    get_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/partyQualifier/partyQualifierId/${partyQualifierId}
+
+  receivedstatusconfig:
+    create_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/receivedStatusConfig
+    get_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/receivedStatusConfig/receivedStatusConfigId/${receivedStatusConfigId}
+    update_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/receivedStatusConfig/receivedStatusConfigId/${receivedStatusConfigId}
+    delete_endpoint: https://scshipment.${envTag}.manhdev.com/api/scshipment/receivedStatusConfig/${pk}
+
   order:
     create_endpoint: https://dcorder.${envTag}.manhdev.com/api/dcorder/order
     save_endpoint: https://dcorder.${envTag}.manhdev.com/api/dcorder/order/save

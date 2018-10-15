@@ -1,0 +1,8 @@
+temp:
+  partyqualifierid: Insurance Company
+  orders: [HAR_ORDER_41, HAR_ORDER_42]
+  stop_actions: [PU, DL]
+main:
+  partyqualifierid: Insurance
+  orders: [HAR_ORDER_41, HAR_ORDER_42]
+  stop_actions: [PU, DL]
