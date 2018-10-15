@@ -5,6 +5,7 @@ import common_libs.CommonUtils
 import connection_factories.RestAssuredUtils
 
 import db.DbConnectionFactory
+import jsonTemplate.shipmentTemplate.BaseMassShipmentInvolvedParties
 import jsonTemplate.shipmentTemplate.BaseShipmentInvolvedParties
 import jsonTemplate.shipmentTemplate.BaseShipmentOrderMovement
 import jsonTemplate.shipmentTemplate.BaseShipmentStop
@@ -64,6 +65,13 @@ class ShipmentApiUtil {
         involvedParties.setPartycontactcorp("DummyCorp")
         involvedParties.setPartycontactlanguage("English")
         return involvedParties
+    }
+
+    def update_mass_Involved_parties(massInvolvedParties){
+        BaseMassShipmentInvolvedParties baseMassShipmentInvolvedParties = new BaseMassShipmentInvolvedParties(massInvolvedParties.orgid, massInvolvedParties.partyqualifierid)
+        baseMassShipmentInvolvedParties.setPartycontactcorp("DummyCorp")
+        baseMassShipmentInvolvedParties.setPartycontactlanguage("English")
+        return baseMassShipmentInvolvedParties
     }
 
     /*Commenting the DB assertion methods*/

@@ -1,6 +1,7 @@
 package common_libs
 
 import com.jayway.restassured.response.Response
+import org.codehaus.groovy.runtime.StackTraceUtils
 import org.testng.Assert
 import org.yaml.snakeyaml.Yaml
 
@@ -32,6 +33,21 @@ class CommonUtils {
             throw new Exception("No ENV under config/tlm_env.yml, please check and retry")
         }
         return envParams
+    }
+
+    def read_properties(String component) {
+        if (Character.isLowerCase(component.charAt(0)))
+            component.charAt(0).toUpperCase()
+        Map envParams = new Yaml().load(new FileReader(System.getProperty("user.dir") + '/src/test/resources/testdata/Test_'+component+'_validations.yml'))
+        if (envParams == null) {
+            throw new Exception("No ENV under config/tlm_env.yml, please check and retry")
+        }
+        return envParams
+    }
+
+    def currentMethodName(){
+        def marker = new Throwable()
+        return StackTraceUtils.sanitize(marker).stackTrace[2].methodName
     }
 
     def raise_unknown_db_exception(db_config) {
@@ -122,6 +138,6 @@ class CommonUtils {
     }
 
     def assertStatusCode(Response response){
-        Assert.assertEquals(response.getStatusCode(),200,"The webservice request is not successful, following error code is thorwn: "+response.getStatusCode())
+        Assert.assertEquals(response.getStatusCode(),200,"The webservice request is not successful, following error code and message is thorwn: "+response.getStatusCode()+"\nError message-> "+response.getBody().jsonPath().get("exceptions.message")[0])
     }
 }

@@ -15,18 +15,18 @@ class BaseShipmentPartyContact {
     def country
 
     BaseShipmentPartyContact(){
-        firstname = ''
+        firstname = 'Automation'
         lastname = ''
-        email = ''
-        phone = ''
-        address1 = ''
-        address2 = ''
-        address3 = ''
-        city = ''
-        state = ''
-        postalcode = ''
-        county = ''
-        country = ''
+        email = 'at@mail.com'
+        phone = '111-222-3334'
+        address1 = '2300 Windy Ridge Pkwy'
+        address2 = 'None'
+        address3 = 'None'
+        city = 'Atlanta'
+        state = 'GA'
+        postalcode = '30339'
+        county = 'Cobb'
+        country = 'USA'
     }
     def buildjson(parent)
     {

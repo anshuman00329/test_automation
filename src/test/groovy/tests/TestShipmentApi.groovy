@@ -7,8 +7,10 @@ import com.jayway.restassured.response.Response
 import common_libs.CommonUtils
 import connection_factories.RestAssuredUtils
 import jsonTemplate.orderTemplate.BaseOrder
+import jsonTemplate.shipmentTemplate.BaseMassCreateInvolvedParties
 import jsonTemplate.shipmentTemplate.BaseShipment
 import jsonTemplate.shipmentTemplate.BaseShipmentPartyQualiffier
+import jsonTemplate.shipmentTemplate.BaseShipmentReceivedStatus
 import jsonTemplate.tenderTemplate.BaseAccept
 import jsonTemplate.tenderTemplate.BaseTender
 import jsonTemplate.tenderTemplate.BaseTenderRecall
@@ -24,6 +26,8 @@ class TestShipmentApi {
 
     BaseShipment shipment
     BaseShipmentPartyQualiffier shipmentPartyQualifier
+    BaseShipmentReceivedStatus baseShipmentReceivedStatus
+    BaseMassCreateInvolvedParties baseMassCreateInvolvedParties
     TenderApiUtil tenderApi
     BaseOrder order
     BaseTender baseTender
@@ -39,11 +43,13 @@ class TestShipmentApi {
     def orgId
     def partyqualifierid
     def updateShipmentId
-    def shipmentJson, shipmentNoteJson, partyQualifierJson, tenderJson, tenderAcceptJson, tenderRejectJson, orderJson
+    def shipmentJson, shipmentNoteJson, partyQualifierJson, tenderJson, tenderAcceptJson, tenderRejectJson, orderJson, validationKey, involvedPatyJson
 
     TestShipmentApi() {
         shipment = new BaseShipment()
+        baseMassCreateInvolvedParties = new BaseMassCreateInvolvedParties()
         shipmentPartyQualifier = new BaseShipmentPartyQualiffier()
+        baseShipmentReceivedStatus = new BaseShipmentReceivedStatus()
         order = new BaseOrder()
         shipmentUtil = new ShipmentApiUtil()
         orderUtil = new OrderApiUtil()
@@ -52,17 +58,18 @@ class TestShipmentApi {
         baseAccept = new BaseAccept()
         baseReject = new BaseTenderReject()
         tenderApi = new TenderApiUtil()
+        validationKey = commonUtil.read_properties("shipment")
         minimum_days_from_now = 2
         orgId = "1"
     }
 
     @BeforeSuite
-    public preSuite() {
+    public preSuite( ){
         RestAssuredUtils.token = restAssuredUtils.tokenAuthentication()
-        println("Global token is: " + RestAssuredUtils.token)
+        println("Global token is: "+RestAssuredUtils.token)
     }
 
-    @BeforeClass(enabled = false)
+    @BeforeClass(enabled = true)
     public void preConfig() {
         //Create a Insurance Company Party Qualifier
         partyqualifierid = "Insurance Company"
@@ -71,7 +78,6 @@ class TestShipmentApi {
         partyQualifierJson = shipmentPartyQualifier.buildjson()
         println("Party Qualifier json = " + partyQualifierJson)
         response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "party_qualifier"), partyQualifierJson)
-        commonUtil.assertStatusCode(response)
         //Create a Insurance Party Qualifier
         partyqualifierid = "Insurance"
         shipmentPartyQualifier.setPartyqualifierid(partyqualifierid)
@@ -79,7 +85,6 @@ class TestShipmentApi {
         partyQualifierJson = shipmentPartyQualifier.buildjson()
         println("Party Qualifier json = " + partyQualifierJson)
         response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "party_qualifier"), partyQualifierJson)
-        commonUtil.assertStatusCode(response)
     }
 
     @Test(description = "To create a 2 stop Shipment with all the entities added.")
@@ -144,7 +149,7 @@ class TestShipmentApi {
             String getStopUrl = commonUtil.getUrl("shipment", "getstop_endpoint")
             getStopUrl = getStopUrl.replace('${shipmentId}', shipmentId)
             getStopUrl = getStopUrl.replace('${stopSeq}', "${i + 1}")
-            println("UTL = " + getStopUrl)
+            println("URL = " + getStopUrl)
             response = restAssuredUtils.getRequest(getStopUrl)
             commonUtil.assertStatusCode(response)
             Assert.assertEquals(response.getBody().jsonPath().get("data.StopFacilityId"), stop_facilities[i], "The expected Facility ID " + stop_facilities[i] + " is not matching with the actual " + response.getBody().jsonPath().get("data.StopFacilityId"))
@@ -478,7 +483,83 @@ class TestShipmentApi {
         Assert.assertEquals(response.getBody().jsonPath().get("data.PlanningStatus"), "Planned", "The expected Status is Planned" + " but found " + response.getBody().jsonPath().get("data.PlanningStatus"));
     }
 
-    @Test(description = 'temperory', enabled = false)
+    @Test(description = 'Create Mass involved parties for 3 Shipments')
+    public void massInvolvedParty() {
+        List<String> shipmentIds = new ArrayList<String>()
+        for (int i = 0; i < 3; i++) {
+            def shipmenttempId = 'MASS_SHIPMENT_' + CommonUtils.getFourDigitRandomNumber()
+            shipmentIds.add(shipmenttempId)
+            def carrierId = 'MASS_CARRIER_' + CommonUtils.getFourDigitRandomNumber()
+            def orders = ['MASS_ORDER_41', 'HAR_ORDER_42']
+            def stop_facilities = ['FAC1', 'FAC2']
+            def stop_actions = ['PU', 'DL']
+            def involvedPatyId = 'eb1c47a-fc08-48a1-9340-f441c4ddec' + CommonUtils.getFourDigitRandomNumber()
+            partyqualifierid = "Insurance Company"
+            shipment.setOrgid(orgId)
+            shipment.setShipmentid(shipmenttempId)
+            //shipment.setPartyqualifierid(partyqualifierid)
+            shipment.setAssignedcarrier(carrierId)
+            shipment.shipmentstops = stop_facilities.collect {
+                shipmentUtil.update_facilities_and_stops_on_tlm_shipment(stop_facilities.indexOf(it), shipment, minimum_days_from_now, stop_facilities, stop_actions)
+            }
+            shipment.shipmentordermovements = orders.collect {
+                shipmentUtil.update_order_movement(orders.indexOf(it), shipment, orders)
+            }
+            shipmentJson = shipment.buildShipmentjsonOrderMovement()
+            //println(shipmentJson)
+            Response response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+            commonUtil.assertStatusCode(response)
+        }
+        /*Iterator itr = shipmentId.iterator()
+        while (itr.hasNext()){
+            println("Shipmentid-> "+ itr.next())
+        }*/
+        def involvedPatyId = 'eb1c47a-fc08-48a1-9340-f441c4ddec' + CommonUtils.getFourDigitRandomNumber()
+        baseMassCreateInvolvedParties.setOrgid(orgId)
+        baseMassCreateInvolvedParties.setShipmentIds(shipmentIds)
+        baseMassCreateInvolvedParties.setPartyqualifierid(partyqualifierid)
+        baseMassCreateInvolvedParties.involvedParties = shipmentUtil.update_mass_Involved_parties(baseMassCreateInvolvedParties)
+        involvedPatyJson = baseMassCreateInvolvedParties.buildJson()
+        println("Mass Involved Parties Json: " + involvedPatyJson)
+        Response response = restAssuredUtils.postRequest(commonUtil.getUrl('involvedparties', 'masscreate_endpoint'), involvedPatyJson)
+        commonUtil.assertStatusCode(response)
+        def getPartyqualifierUrl = commonUtil.getUrl("partyqualifier", "get_endpoint")
+        getPartyqualifierUrl = getPartyqualifierUrl.replace('${partyQualifierId}', "Insurance Company")
+        response = restAssuredUtils.getRequest(getPartyqualifierUrl)
+        String responseString = response.getBody().jsonPath().get("data.InvolvedParties")
+        println(responseString)
+        Iterator itr = shipmentIds.iterator()
+        while(itr.hasNext()){
+            println(responseString.contains("ShipmentId=${itr.next()}"))
+        }
+        commonUtil.assertStatusCode(response)
+    }
+
+    @Test(description = "Create a received status config")
+    public void createReceivedStatusConfig() {
+        def configId = "VConfig-"+CommonUtils.getFourDigitRandomNumber()
+        baseShipmentReceivedStatus.setEnableReceivedStatusFlow(false)
+        baseShipmentReceivedStatus.setEvaluationCriteria("VCrit-02")
+        baseShipmentReceivedStatus.setMonitorOrderLineQuantity(false)
+        baseShipmentReceivedStatus.setMonitorOrderLineQuantity(false)
+        baseShipmentReceivedStatus.setMonitorOrderLineSize1(false)
+        baseShipmentReceivedStatus.setMonitorOrderLineSize2(false)
+        baseShipmentReceivedStatus.setMonitorOrderLineSizeValue(false)
+        baseShipmentReceivedStatus.setMonitorOrderLineVolume(false)
+        baseShipmentReceivedStatus.setMonitorOrderLineWeight(false)
+        baseShipmentReceivedStatus.setReceivedStatusConfigId(configId)
+        def receivedStatusJson =baseShipmentReceivedStatus.buildJson()
+        println("Received Status Json-> "+receivedStatusJson)
+        Response response = restAssuredUtils.postRequest(commonUtil.getUrl("receivedstatusconfig", "create_endpoint"),receivedStatusJson)
+        commonUtil.assertStatusCode(response)
+        String getShipmentReceivedStatusUrl = commonUtil.getUrl("receivedstatusconfig","get_endpoint")
+        getShipmentReceivedStatusUrl = getShipmentReceivedStatusUrl.replace('${receivedStatusConfigId}',configId )
+        response = restAssuredUtils.getRequest(getShipmentReceivedStatusUrl)
+        commonUtil.assertStatusCode(response)
+        println(response.getBody().jsonPath().get("data"))
+    }
+
+    @Test(description = 'Example of fetching the expected data from the yaml file', enabled = false)
     public void temp() {
         def shipmentId = 'PAR_SHIPMENT_' + CommonUtils.getFourDigitRandomNumber()
         def carrierId = 'PAR_CARRIER_' + CommonUtils.getFourDigitRandomNumber()
@@ -504,6 +585,7 @@ class TestShipmentApi {
         println("Shipment Json with 2 Stops =" + shipmentJson)
         response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "endpoint"), shipmentJson)
         println("Status = " + response.getStatusCode())
+        println(validationKey[commonUtil.currentMethodName()]["orders"][1])
         //shipmentUtil.getShipment(shipmentId)
     }
 }
