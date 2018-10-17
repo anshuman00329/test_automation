@@ -15,12 +15,16 @@ import jsonTemplate.tenderTemplate.BaseAccept
 import jsonTemplate.tenderTemplate.BaseTender
 import jsonTemplate.tenderTemplate.BaseTenderRecall
 import jsonTemplate.tenderTemplate.BaseTenderReject
+import org.apache.log4j.PropertyConfigurator
 import org.testng.Assert
 import org.testng.annotations.BeforeClass
 import org.testng.annotations.BeforeSuite
+import org.testng.annotations.BeforeTest
 import org.testng.annotations.Test
 import jsonTemplate.orderTemplate.BaseOrder
 import jsonTemplate.shipmentTemplate.BaseShipment
+
+import java.util.logging.Logger
 
 class TestShipmentApi {
 
@@ -44,6 +48,7 @@ class TestShipmentApi {
     def partyqualifierid
     def updateShipmentId
     def shipmentJson, shipmentNoteJson, partyQualifierJson, tenderJson, tenderAcceptJson, tenderRejectJson, orderJson, validationKey, involvedPatyJson
+    static Logger logger=Logger.getLogger(this.getClass().getName());
 
     TestShipmentApi() {
         shipment = new BaseShipment()
@@ -67,6 +72,13 @@ class TestShipmentApi {
     public preSuite( ){
         RestAssuredUtils.token = restAssuredUtils.tokenAuthentication()
         println("Global token is: "+RestAssuredUtils.token)
+    }
+
+    @BeforeTest
+    public void loggerConfiguration()
+    {
+        String log4jConfigFile = System.getProperty("user.dir")+ File.separator + "log4j.properties";
+        PropertyConfigurator.configure(log4jConfigFile);
     }
 
     @BeforeClass(enabled = true)
