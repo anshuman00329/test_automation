@@ -52,16 +52,8 @@ class TrackingApiUtil {
         baseRecall = new BaseTenderRecall()
         baseReset = new BaseReset()
         baseTenderConfig = new BaseTenderConfig()
-
         orgId = '1'
     }
-    //@BeforeSuite
-    public void preSuite() {
-        RestAssuredUtils.token = restAssuredUtils.tokenAuthentication()
-        println("Global token is: " + RestAssuredUtils.token)
-
-    }
-
     //Create Shipment Json
     @Test(description = "create")
     public void createshipment(def shipmentId, def carrierId) {
@@ -91,8 +83,6 @@ class TrackingApiUtil {
         println("Tender Json =" + tenderJson)
         response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "endpoint"), tenderJson)
         commonUtil.assertStatusCode(response)
-
-
     }
 
     //Create Tender Accept Json
@@ -104,7 +94,6 @@ class TrackingApiUtil {
         println("Accept Json =" + tenderAcceptJson)
         response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "acceptendpoint"), tenderAcceptJson)
         commonUtil.assertStatusCode(response)
-
     }
 
     //create tracking message
@@ -117,8 +106,6 @@ class TrackingApiUtil {
         println("Tracking Json = " + trackingJson)
         response = restAssuredUtils.postRequest(commonUtil.getUrl("tracking", "endpoint"), trackingJson)
         commonUtil.assertStatusCode(response)
-
-
     }
 
 }

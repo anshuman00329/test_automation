@@ -21,21 +21,21 @@ class BaseTrackingCreate {
     def country
     def stateProvince
     def postalCode
-    def address=[]
+    def address = []
 
     BaseTrackingCreate() {
         trackingId = "1"
         shipmentId = "ShipB1"
-        trackingStatus ="ACCEPTED"
+        trackingStatus = "ACCEPTED"
         carrierId = "CARR2"
         messageType = "Arrival"
         stopSeq = 1
         eventtimestamp = "2018-08-06T06:00:00"
         trailerNumber = "TrailerNumber at stop2 Arrival"
         tractorNumber = "TractorNumber at stop2 Arrival"
-        billOfLadingNumber ="BillOfLoading at stop2 Arrival"
+        billOfLadingNumber = "BillOfLoading at stop2 Arrival"
         proNumber = "1234ProNumber at stop2 Arrival"
-       address = new BaseAddress()
+        address = new BaseAddress()
         notes = "To test shipment attributes"
         latitude = "58.5000"
         longitude = "-134.4967"
@@ -44,7 +44,8 @@ class BaseTrackingCreate {
         postalCode = "32214"
         stateProvince = "FL"
     }
-    def buildjson(){
+
+    def buildjson() {
         def json = new JsonBuilder()
         def root = json {
             TrackingId this.trackingId
@@ -59,10 +60,7 @@ class BaseTrackingCreate {
             BillOfLadingNumber this.billOfLadingNumber
             ProNumber this.proNumber
             Notes this.notes
-            Address this.address.each { it.buildjson(delegate)}
-
-
-
+            Address this.address.each { it.buildjson(delegate) }
             Latitude this.latitude
             Longitude this.longitude
             City this.city

@@ -11,21 +11,16 @@ import org.testng.Assert
 import org.testng.annotations.BeforeSuite
 import org.testng.annotations.Test
 
-class TrackingApi {
+class TestTrackingApi {
 
     BaseShipment shipment
-    def shipmentUtil
-    def orgId
-
-    BaseTender baseTender
-    TenderApiUtil tenderApi
     TrackingApiUtil trackingApi
     BaseTrackingCreate baseTrackingCreate
     def response
     RestAssuredUtils restAssuredUtils;
     CommonUtils commonUtil
 
-    TrackingApi() {
+    TestTrackingApi() {
         trackingApi = new TrackingApiUtil()
         commonUtil = new CommonUtils()
         restAssuredUtils = new RestAssuredUtils()
@@ -33,21 +28,18 @@ class TrackingApi {
 
     }
 
-    @BeforeSuite(enabled = false)
+    @BeforeSuite(enabled = false)
     public preSuite() {
         RestAssuredUtils.token = restAssuredUtils.tokenAuthentication()
         println("Global token is: " + RestAssuredUtils.token)
     }
 
     @Test(description = "Validation of MessageType:Loading,Unloading,Loaded,Unloaded,Other")
-
     public void valiadtionOfMessageTypeTest() {
         def shipmentId = 'ShipB' + CommonUtils.getFourDigitRandomNumber()
         def carrierId = 'CARR' + CommonUtils.getFourDigitRandomNumber()
         def trackingId = 'TrackB' + CommonUtils.getFourDigitRandomNumber()
         def reasonCode = 'REASON_CODE1'
-
-
         trackingApi.createshipment(shipmentId, carrierId)
         trackingApi.createTender(shipmentId)
         trackingApi.acceptTender(shipmentId, carrierId)
@@ -66,8 +58,7 @@ class TrackingApi {
         response = restAssuredUtils.postRequest(commonUtil.getUrl("tracking", "endpoint"), TrackingUrl)
         commonUtil.assertStatusCode(response)
         String getTrackingUrl
-        getTrackingUrl = commonUtil.getUrl("tracking", "gettrackingendpoint")
-        getTrackingUrl = getTrackingUrl.replace('${trackingId}', trackingId_loading)
+        getTrackingUrl = commonUtil.getUrl("tracking", "gettrackingendpoint").replace('${trackingId}', trackingId_loading);
         println(getTrackingUrl)
         response = restAssuredUtils.getRequest(getTrackingUrl)
         commonUtil.assertStatusCode(response)
@@ -86,8 +77,7 @@ class TrackingApi {
         println("Tracking Json = " + TrackingUrl)
         response = restAssuredUtils.postRequest(commonUtil.getUrl("tracking", "endpoint"), TrackingUrl)
         commonUtil.assertStatusCode(response)
-        getTrackingUrl = commonUtil.getUrl("tracking", "gettrackingendpoint")
-        getTrackingUrl = getTrackingUrl.replace('${trackingId}', trackingId_unloading)
+        getTrackingUrl = commonUtil.getUrl("tracking", "gettrackingendpoint").replace('${trackingId}', trackingId_unloading)
         println(getTrackingUrl)
         response = restAssuredUtils.getRequest(getTrackingUrl)
         commonUtil.assertStatusCode(response)
@@ -105,8 +95,7 @@ class TrackingApi {
         println("Tracking Json = " + TrackingUrl)
         response = restAssuredUtils.postRequest(commonUtil.getUrl("tracking", "endpoint"), TrackingUrl)
         commonUtil.assertStatusCode(response)
-        getTrackingUrl = commonUtil.getUrl("tracking", "gettrackingendpoint")
-        getTrackingUrl = getTrackingUrl.replace('${trackingId}', trackingId_loaded)
+        getTrackingUrl = commonUtil.getUrl("tracking", "gettrackingendpoint").replace('${trackingId}', trackingId_loaded)
         println(getTrackingUrl)
         response = restAssuredUtils.getRequest(getTrackingUrl)
         commonUtil.assertStatusCode(response)
@@ -124,8 +113,7 @@ class TrackingApi {
         println("Tracking Json = " + TrackingUrl)
         response = restAssuredUtils.postRequest(commonUtil.getUrl("tracking", "endpoint"), TrackingUrl)
         commonUtil.assertStatusCode(response)
-        getTrackingUrl = commonUtil.getUrl("tracking", "gettrackingendpoint")
-        getTrackingUrl = getTrackingUrl.replace('${trackingId}', trackingId_unloaded)
+        getTrackingUrl = commonUtil.getUrl("tracking", "gettrackingendpoint").replace('${trackingId}', trackingId_unloaded)
         println(getTrackingUrl)
         response = restAssuredUtils.getRequest(getTrackingUrl)
         commonUtil.assertStatusCode(response)
@@ -143,16 +131,12 @@ class TrackingApi {
         println("Tracking Json = " + TrackingUrl)
         response = restAssuredUtils.postRequest(commonUtil.getUrl("tracking", "endpoint"), TrackingUrl)
         commonUtil.assertStatusCode(response)
-        getTrackingUrl = commonUtil.getUrl("tracking", "gettrackingendpoint")
-        getTrackingUrl = getTrackingUrl.replace('${trackingId}', trackingId_other)
+        getTrackingUrl = commonUtil.getUrl("tracking", "gettrackingendpoint").replace('${trackingId}', trackingId_other)
         println(getTrackingUrl)
         response = restAssuredUtils.getRequest(getTrackingUrl)
         commonUtil.assertStatusCode(response)
         tracking_status = response.getBody().jsonPath().get("data.MessageType")
         Assert.assertEquals(tracking_status, "Other", "The expected qualifier is Other but found " + tracking_status)
-
-
     }
-
 }
 

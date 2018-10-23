@@ -8,7 +8,6 @@ class BaseAddress {
     def city
     def county
     def email
-
     BaseAddress()
     {
         address1="State Road 46"
@@ -28,8 +27,5 @@ class BaseAddress {
            County this.county
            Email this.email
        }
-
-
-
     }
 }
