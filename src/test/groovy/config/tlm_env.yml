@@ -40,6 +40,7 @@ app_config:
 
   tracking:
     endpoint: https://tracking.${envTag}.manhdev.com/api/tracking/tracking
+    gettrackingendpoint: https://tracking.${envTag}.manhdev.com/api/tracking/tracking/trackingId/${trackingId}
 
   invoice:
     endpoint: https://invoice.${envTag}.manhdev.com/api/invoice/invoice
