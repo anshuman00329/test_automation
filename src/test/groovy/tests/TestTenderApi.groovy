@@ -7,14 +7,11 @@ import common_libs.CommonUtils
 import connection_factories.RestAssuredUtils
 import jsonTemplate.shipmentTemplate.BaseShipment
 import jsonTemplate.tenderTemplate.*
-import logger.TestLogger
+import org.apache.log4j.PropertyConfigurator
 import org.testng.Assert
 import org.testng.annotations.BeforeClass
-import org.testng.annotations.BeforeSuite
 import org.testng.annotations.BeforeTest
 import org.testng.annotations.Test
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator
 
 import java.util.logging.Logger
 
