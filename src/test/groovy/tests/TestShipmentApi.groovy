@@ -7,10 +7,7 @@ import com.jayway.restassured.response.Response
 import common_libs.CommonUtils
 import connection_factories.RestAssuredUtils
 import jsonTemplate.orderTemplate.BaseOrder
-import jsonTemplate.shipmentTemplate.BaseMassCreateInvolvedParties
-import jsonTemplate.shipmentTemplate.BaseShipment
-import jsonTemplate.shipmentTemplate.BaseShipmentPartyQualiffier
-import jsonTemplate.shipmentTemplate.BaseShipmentReceivedStatus
+import jsonTemplate.shipmentTemplate.*
 import jsonTemplate.tenderTemplate.BaseAccept
 import jsonTemplate.tenderTemplate.BaseTender
 import jsonTemplate.tenderTemplate.BaseTenderRecall
@@ -21,8 +18,6 @@ import org.testng.annotations.BeforeClass
 import org.testng.annotations.BeforeSuite
 import org.testng.annotations.BeforeTest
 import org.testng.annotations.Test
-import jsonTemplate.orderTemplate.BaseOrder
-import jsonTemplate.shipmentTemplate.BaseShipment
 
 import java.util.logging.Logger
 
@@ -32,6 +27,7 @@ class TestShipmentApi {
     BaseShipmentPartyQualiffier shipmentPartyQualifier
     BaseShipmentReceivedStatus baseShipmentReceivedStatus
     BaseMassCreateInvolvedParties baseMassCreateInvolvedParties
+    BaseMassCreateNotes baseMassCreateNotes
     TenderApiUtil tenderApi
     BaseOrder order
     BaseTender baseTender
@@ -55,6 +51,7 @@ class TestShipmentApi {
         baseMassCreateInvolvedParties = new BaseMassCreateInvolvedParties()
         shipmentPartyQualifier = new BaseShipmentPartyQualiffier()
         baseShipmentReceivedStatus = new BaseShipmentReceivedStatus()
+        baseMassCreateNotes = new BaseMassCreateNotes()
         order = new BaseOrder()
         shipmentUtil = new ShipmentApiUtil()
         orderUtil = new OrderApiUtil()
@@ -410,8 +407,7 @@ class TestShipmentApi {
         response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "endpoint"), tenderJson)
         commonUtil.assertStatusCode(response)
         String getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
-        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
-        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId).replace('${carrierId}', carrierId)
         response = restAssuredUtils.getRequest(getTenderUrl)
         commonUtil.assertStatusCode(response)
         def tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
@@ -425,8 +421,7 @@ class TestShipmentApi {
         response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "acceptendpoint"), tenderAcceptJson)
         commonUtil.assertStatusCode(response)
         getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
-        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
-        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId).replace('${carrierId}', carrierId)
         response = restAssuredUtils.getRequest(getTenderUrl)
         commonUtil.assertStatusCode(response)
         tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
@@ -441,8 +436,7 @@ class TestShipmentApi {
         response = restAssuredUtils.postRequest(commonUtil.getUrl("tender", "rejectendpoint"), tenderRejectJson)
         commonUtil.assertStatusCode(response)
         getTenderUrl = commonUtil.getUrl("tender", "gettenderendpoint")
-        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId)
-        getTenderUrl = getTenderUrl.replace('${carrierId}', carrierId)
+        getTenderUrl = getTenderUrl.replace('${shipmentId}', shipmentId).replace('${carrierId}', carrierId)
         response = restAssuredUtils.getRequest(getTenderUrl)
         commonUtil.assertStatusCode(response)
         tenderStatus = response.getBody().jsonPath().get("data.TenderStatus")
@@ -569,6 +563,51 @@ class TestShipmentApi {
         response = restAssuredUtils.getRequest(getShipmentReceivedStatusUrl)
         commonUtil.assertStatusCode(response)
         println(response.getBody().jsonPath().get("data"))
+    }
+
+    @Test(description = "Mass create Notes for Shipments")
+    public void massCreateNotes(){
+        List<String> shipmentIds = new ArrayList<String>()
+        Response response
+        for (int i = 0; i < 3; i++) {
+            def shipmenttempId = 'MASS_SHIPMENT_' + CommonUtils.getFourDigitRandomNumber()
+            shipmentIds.add(shipmenttempId)
+            def carrierId = 'MASS_CARRIER_' + CommonUtils.getFourDigitRandomNumber()
+            def orders = ['MASS_ORDER_41', 'HAR_ORDER_42']
+            def stop_facilities = ['FAC1', 'FAC2']
+            def stop_actions = ['PU', 'DL']
+            shipment.setOrgid(orgId)
+            shipment.setShipmentid(shipmenttempId)
+            shipment.setAssignedcarrier(carrierId)
+            shipment.shipmentstops = stop_facilities.collect {
+                shipmentUtil.update_facilities_and_stops_on_tlm_shipment(stop_facilities.indexOf(it), shipment, minimum_days_from_now, stop_facilities, stop_actions)
+            }
+            shipment.shipmentordermovements = orders.collect {
+                shipmentUtil.update_order_movement(orders.indexOf(it), shipment, orders)
+            }
+            shipmentJson = shipment.buildShipmentjsonOrderMovement()
+            //println(shipmentJson)
+            response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment", "create_endpoint"), shipmentJson)
+            commonUtil.assertStatusCode(response)
+        }
+        baseMassCreateNotes.setShipmentids(shipmentIds)
+        baseMassCreateNotes.shipmentnotes= shipmentUtil.update_mass_create_shipment_note(101, "DummyNT", "Shipment start message", "All", "DummyNC", 1)
+        def massNotesJson = baseMassCreateNotes.buildMassCreateNotes()
+        println("JSON => "+massNotesJson)
+        response = restAssuredUtils.postRequest(commonUtil.getUrl("shipment","create_noteforShipments_endpoint"), massNotesJson)
+        commonUtil.assertStatusCode(response)
+        Iterator itr = shipmentIds.iterator()
+        while(itr.hasNext()){
+            String getShipmentUrl = commonUtil.getUrl("shipment", "getshipment_endpoint")
+            getShipmentUrl = getShipmentUrl.replace('${shipmentId}',itr.next())
+            response = restAssuredUtils.getRequest(getShipmentUrl)
+            Assert.assertEquals(response.getBody().jsonPath().get("data.ShipmentNote.NoteSeq")[0], 101, "Note Sequence is not matching with the expected value")
+            Assert.assertEquals(response.getBody().jsonPath().get("data.ShipmentNote.NoteType")[0], "DummyNT", "Note type is not matching with the expected value")
+            Assert.assertEquals(response.getBody().jsonPath().get("data.ShipmentNote.NoteValue")[0], "Shipment start message", "Note value is not matching with the expected value")
+            Assert.assertEquals(response.getBody().jsonPath().get("data.ShipmentNote.NoteVisibility")[0], "All", "Note visibility is not matching with the expected value")
+            Assert.assertEquals(response.getBody().jsonPath().get("data.ShipmentNote.NoteCode")[0], "DummyNC", "Note code is not matching with the expected value")
+            Assert.assertEquals(response.getBody().jsonPath().get("data.ShipmentNote.StopSeq")[0], 1, "Note code is not matching with the expected value")
+        }
     }
 
     @Test(description = 'Example of fetching the expected data from the yaml file', enabled = false)

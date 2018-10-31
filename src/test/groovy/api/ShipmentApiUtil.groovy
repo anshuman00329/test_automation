@@ -6,6 +6,7 @@ import connection_factories.RestAssuredUtils
 
 import db.DbConnectionFactory
 import jsonTemplate.shipmentTemplate.BaseMassShipmentInvolvedParties
+import jsonTemplate.shipmentTemplate.BaseMassShipmentNote
 import jsonTemplate.shipmentTemplate.BaseShipmentInvolvedParties
 import jsonTemplate.shipmentTemplate.BaseShipmentOrderMovement
 import jsonTemplate.shipmentTemplate.BaseShipmentStop
@@ -57,6 +58,17 @@ class ShipmentApiUtil {
         shipmentNote.setNotecode(noteCode[index])
         shipmentNote.setNotevisibility(noteVisibility[index])
         return shipmentNote
+    }
+
+    def update_mass_create_shipment_note(int NoteSeq, String NoteType, String NoteValue, String NoteVisibility, String NoteCode, int StopSeq){
+        BaseMassShipmentNote baseMassShipmentNote = new BaseMassShipmentNote()
+        baseMassShipmentNote.setNoteseq(NoteSeq)
+        baseMassShipmentNote.setNotetype(NoteType)
+        baseMassShipmentNote.setNotevalue(NoteValue)
+        baseMassShipmentNote.setNotevisibility(NoteVisibility)
+        baseMassShipmentNote.setNotecode(NoteCode)
+        baseMassShipmentNote.setStopseq(StopSeq)
+        return baseMassShipmentNote
     }
 
     def update_Involved_parties(shipment, involvedPatyId) {
